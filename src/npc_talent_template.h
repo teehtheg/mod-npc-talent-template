@@ -222,6 +222,8 @@ enum GossipActions
     GOSSIP_ACTION_RESET_PET_TALENTS = 5002,
     GOSSIP_ACTION_RESET_REMOVE_GLYPHS = 5003,
     GOSSIP_ACTION_RESET_REMOVE_EQUIPPED_GEAR = 5004,
+    GOSSIP_ACTION_BACK = 5005,           // return to root menu from a category submenu
+    GOSSIP_ACTION_CATEGORY_BASE = 6000,  // category nav: action = BASE + categoryIndex
 };
 
 enum TemplateFlags
@@ -242,9 +244,10 @@ struct IndexTemplate
     TemplateFlags mask;
     uint32 minLevel;
     uint32 maxLevel;
-    std::string gearOverride; // use playerSpec if not set
-    std::string glyphOverride; // use playerSpec if not set
-    std::string talentOverride; // use playerSpec if not set
+    std::string gearOverride;    // use playerSpec if not set
+    std::string glyphOverride;   // use playerSpec if not set
+    std::string talentOverride;  // use playerSpec if not set
+    std::string category;        // non-empty = grouped behind a sub-menu; empty = root menu
 };
 
 typedef std::vector<TalentTemplate*> TalentContainer;

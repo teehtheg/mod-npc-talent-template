@@ -250,7 +250,7 @@ void sTemplateNPC::LoadIndexContainer()
         delete index;
     indexContainer.clear();
 
-    QueryResult result = CharacterDatabase.Query("SELECT `playerClass`, `playerSpec`, `gossipAction`, `gossipText`, `mask`, `minLevel`, `maxLevel`, `gearOverride`, `glyphOverride`, `talentOverride` FROM `mod_npc_talent_template_index` ORDER BY `gossipAction`;");
+    QueryResult result = CharacterDatabase.Query("SELECT `playerClass`, `playerSpec`, `gossipAction`, `gossipText`, `mask`, `minLevel`, `maxLevel`, `gearOverride`, `glyphOverride`, `talentOverride`, `category` FROM `mod_npc_talent_template_index` ORDER BY `gossipAction`;");
 
     uint32 oldMSTime = getMSTime();
     uint32 count = 0;
@@ -283,6 +283,7 @@ void sTemplateNPC::LoadIndexContainer()
         indexTemplate->talentOverride = fields[9].Get<std::string>();
         if (indexTemplate->talentOverride.empty())
             indexTemplate->talentOverride = indexTemplate->playerSpec;
+        indexTemplate->category = fields[10].Get<std::string>();
 
         indexContainer.push_back(indexTemplate);
         ++count;
@@ -501,13 +502,26 @@ class npc_talent_template : public CreatureScript
 public:
     npc_talent_template() : CreatureScript("npc_talent_template") {}
 
-    bool OnGossipHello(Player* player, Creature* creature) override
+    // Returns ordered list of unique non-empty categories eligible for this player.
+    static std::vector<std::string> GetEligibleCategories(Player* player)
     {
-        for (auto const& indexTemplate : sTemplateNpcMgr->indexContainer)
-            if (indexTemplate->playerClass == sTemplateNpcMgr->GetClassString(player).c_str() && (indexTemplate->minLevel <= player->GetLevel() && player->GetLevel() <= indexTemplate->maxLevel))
-                AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, indexTemplate->gossipText, GOSSIP_SENDER_MAIN, indexTemplate->gossipAction);
+        std::vector<std::string> categories;
+        std::string playerClass = sTemplateNpcMgr->GetClassString(player);
+        uint32 level = player->GetLevel();
+        for (auto const& t : sTemplateNpcMgr->indexContainer)
+        {
+            if (t->playerClass != playerClass || t->category.empty())
+                continue;
+            if (t->minLevel > level || level > t->maxLevel)
+                continue;
+            if (std::find(categories.begin(), categories.end(), t->category) == categories.end())
+                categories.push_back(t->category);
+        }
+        return categories;
+    }
 
-        // Extra gossip
+    void AddUtilityItems(Player* player)
+    {
         if (sTemplateNpcMgr->enableResetTalents || sTemplateNpcMgr->enableRemoveAllGlyphs || sTemplateNpcMgr->enableDestroyEquippedGear)
             AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, "----------------------------------------------", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_SPACER);
 
@@ -523,6 +537,29 @@ public:
 
         if (sTemplateNpcMgr->enableDestroyEquippedGear)
             AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, "|cff00ff00|TInterface\\icons\\ability_vehicle_launchplayer:30|t|r Destroy my equipped gear", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_RESET_REMOVE_EQUIPPED_GEAR, "Are you sure you want to destroy all your equipped gear?", 0, false);
+    }
+
+    bool OnGossipHello(Player* player, Creature* creature) override
+    {
+        std::string playerClass = sTemplateNpcMgr->GetClassString(player);
+        uint32 level = player->GetLevel();
+
+        // One navigation entry per unique category (shown first)
+        std::vector<std::string> categories = GetEligibleCategories(player);
+        for (uint32 i = 0; i < static_cast<uint32>(categories.size()); ++i)
+            AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1,
+                "|cff00ccff>> " + categories[i] + "|r",
+                GOSSIP_SENDER_MAIN, GOSSIP_ACTION_CATEGORY_BASE + i);
+
+        // Uncategorized entries shown directly in the root menu
+        for (auto const& indexTemplate : sTemplateNpcMgr->indexContainer)
+            if (indexTemplate->playerClass == playerClass &&
+                indexTemplate->minLevel <= level &&
+                level <= indexTemplate->maxLevel &&
+                indexTemplate->category.empty())
+                AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, indexTemplate->gossipText, GOSSIP_SENDER_MAIN, indexTemplate->gossipAction);
+
+        AddUtilityItems(player);
 
         SendGossipMenuFor(player, creature->GetEntry(), creature->GetGUID());
         return true;
@@ -535,19 +572,52 @@ public:
 
         player->PlayerTalkClass->ClearMenus();
 
-        for (IndexTemplate *const &indexTemplate : sTemplateNpcMgr->indexContainer)
-          if (indexTemplate->gossipAction == uiAction)
-          {
-            sTemplateNpcMgr->ApplyTemplate(player, indexTemplate);
-            CloseGossipMenuFor(player);
-            break;
-          }
+        // Category submenu: rebuild menu with specs belonging to the selected category
+        if (uiAction >= GOSSIP_ACTION_CATEGORY_BASE)
+        {
+            uint32 categoryIndex = uiAction - GOSSIP_ACTION_CATEGORY_BASE;
+            std::vector<std::string> categories = GetEligibleCategories(player);
+            if (categoryIndex < static_cast<uint32>(categories.size()))
+            {
+                const std::string& category = categories[categoryIndex];
+                std::string playerClass = sTemplateNpcMgr->GetClassString(player);
+                uint32 level = player->GetLevel();
+                for (auto const& indexTemplate : sTemplateNpcMgr->indexContainer)
+                    if (indexTemplate->playerClass == playerClass &&
+                        indexTemplate->minLevel <= level &&
+                        level <= indexTemplate->maxLevel &&
+                        indexTemplate->category == category)
+                        AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, indexTemplate->gossipText, GOSSIP_SENDER_MAIN, indexTemplate->gossipAction);
 
-        // Extra gossip
+                AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, "|cffaaaaaa<< Back|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_BACK);
+                SendGossipMenuFor(player, creature->GetEntry(), creature->GetGUID());
+            }
+            player->UpdateSkillsForLevel();
+            return true;
+        }
+
+        // Back arrow: return to root menu
+        if (uiAction == GOSSIP_ACTION_BACK)
+        {
+            OnGossipHello(player, creature);
+            player->UpdateSkillsForLevel();
+            return true;
+        }
+
+        // Spec template actions
+        for (IndexTemplate* const& indexTemplate : sTemplateNpcMgr->indexContainer)
+            if (indexTemplate->gossipAction == uiAction)
+            {
+                sTemplateNpcMgr->ApplyTemplate(player, indexTemplate);
+                CloseGossipMenuFor(player);
+                player->UpdateSkillsForLevel();
+                return true;
+            }
+
+        // Utility actions
         switch (uiAction)
         {
             case GOSSIP_ACTION_SPACER:
-                // return to OnGossipHello menu, otherwise it will freeze every menu
                 OnGossipHello(player, creature);
                 break;
 
@@ -590,7 +660,6 @@ public:
         }
 
         player->UpdateSkillsForLevel();
-
         return true;
     }
 };
