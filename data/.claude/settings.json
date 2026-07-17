@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Azerothcore_playerbots/modules/mod-npc-talent-template/**)",
+      "Bash(python -c \"import urllib.request, re; req = urllib.request.Request\\('https://www.wowhead.com/wotlk/item=40113', headers={'User-Agent':'Mozilla/5.0'}\\); html = urllib.request.urlopen\\(req, timeout=30\\).read\\(\\).decode\\('utf-8','ignore'\\); m = re.findall\\(r'gemEnchant[^,}]{0,80}', html\\); print\\('gemEnchant matches:', m[:10]\\)\")",
+      "Bash(python -c ' *)",
+      "WebFetch(domain:www.wowhead.com)"
+    ]
+  }
+}
