@@ -46,3 +46,7 @@ local.properties
 .loadpath
 .project
 .cproject
+
+
+out/
+*.pyc

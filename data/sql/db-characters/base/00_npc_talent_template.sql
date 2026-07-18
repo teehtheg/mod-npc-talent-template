@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS `mod_npc_talent_template_index` (
   `mask` int unsigned NOT NULL DEFAULT '0',
   `minLevel` int unsigned NOT NULL DEFAULT '0',
   `maxLevel` int unsigned NOT NULL DEFAULT '0',
+  `category` VARCHAR(64) NOT NULL DEFAULT '',
   `gearOverride` varchar(50) NOT NULL DEFAULT '',
   `glyphOverride` varchar(50) NOT NULL DEFAULT '',
   `talentOverride` varchar(50) NOT NULL DEFAULT ''
