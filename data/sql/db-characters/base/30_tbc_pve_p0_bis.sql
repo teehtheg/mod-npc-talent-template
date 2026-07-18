@@ -2,6 +2,11 @@
 -- Phase: 0  Mode: pve
 -- 27 specs
 
+-- Idempotency: remove this file's templates first so re-application cannot duplicate rows
+-- (the index table has no unique key; without this a re-applied file would append copies).
+DELETE FROM `mod_npc_talent_template_index` WHERE `playerSpec` IN ('Balance70PvEP0BiS', 'Cat70PvEP0BiS', 'Bear70PvEP0BiS', 'Restoration70PvEP0BiS', 'Beastmastery70PvEP0BiS', 'Marksmanship70PvEP0BiS', 'Survival70PvEP0BiS', 'Arcane70PvEP0BiS', 'Fire70PvEP0BiS', 'Frost70PvEP0BiS', 'Holy70PvEP0BiS', 'Protection70PvEP0BiS', 'Retribution70PvEP0BiS', 'Discipline70PvEP0BiS', 'Shadow70PvEP0BiS', 'Assassination70PvEP0BiS', 'Combat70PvEP0BiS', 'Elemental70PvEP0BiS', 'Enhancement70PvEP0BiS', 'Affliction70PvEP0BiS', 'Demonology70PvEP0BiS', 'Destruction70PvEP0BiS', 'Arms70PvEP0BiS', 'Fury70PvEP0BiS');
+DELETE FROM `mod_npc_talent_template_gear` WHERE `playerSpec` IN ('Balance70PvEP0BiS', 'Cat70PvEP0BiS', 'Bear70PvEP0BiS', 'Restoration70PvEP0BiS', 'Beastmastery70PvEP0BiS', 'Marksmanship70PvEP0BiS', 'Survival70PvEP0BiS', 'Arcane70PvEP0BiS', 'Fire70PvEP0BiS', 'Frost70PvEP0BiS', 'Holy70PvEP0BiS', 'Protection70PvEP0BiS', 'Retribution70PvEP0BiS', 'Discipline70PvEP0BiS', 'Shadow70PvEP0BiS', 'Assassination70PvEP0BiS', 'Combat70PvEP0BiS', 'Elemental70PvEP0BiS', 'Enhancement70PvEP0BiS', 'Affliction70PvEP0BiS', 'Demonology70PvEP0BiS', 'Destruction70PvEP0BiS', 'Arms70PvEP0BiS', 'Fury70PvEP0BiS');
+
 SET @MINLEVEL = 70;
 SET @MAXLEVEL = 79;
 SET @RACEMASK_ALL = 1791;

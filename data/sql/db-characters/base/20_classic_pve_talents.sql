@@ -4,6 +4,10 @@
 -- applied to a level-60 bot (which natively gets 50 points).
 -- 17 specs / 378 talent rows
 
+-- Idempotency: remove this file's templates first so re-application cannot duplicate rows
+-- (the index table has no unique key; without this a re-applied file would append copies).
+DELETE FROM `mod_npc_talent_template_talents` WHERE `playerSpec` IN ('Balance60PvE', 'Bear60PvE', 'Cat60PvE', 'Restoration60PvE', 'Marksmanship60PvE', 'Fire60PvE', 'Holy60PvE', 'Protection60PvE', 'Shadow60PvE', 'Combat60PvE', 'Elemental60PvE', 'Enhancement60PvE', 'Affliction60PvE', 'Fury60PvE');
+
 /*!40000 ALTER TABLE `mod_npc_talent_template_talents` DISABLE KEYS */;
 INSERT INTO `mod_npc_talent_template_talents` (`playerClass`, `playerSpec`, `talentId`) VALUES
 ('Druid', 'Balance60PvE', 5570),
