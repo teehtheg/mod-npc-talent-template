@@ -159,7 +159,11 @@ def main() -> None:
             key = mw._select_primary_tab(planners.keys(), args.phase)
             digits = planner_talent_digits(planners[key])
             player_class, spec_base = mw.parse_class_and_spec(url)
-            player_spec = f"{spec_base}{args.suffix}"
+            # Druid Feral shares one talent tree across two roles (Cat DPS / Bear Tank)
+            # but they need different builds — disambiguate the tank as FeralTank.
+            talent_base = "FeralTank" if (player_class == "Druid" and spec_base == "Feral"
+                                          and role == "tank") else spec_base
+            player_spec = f"{talent_base}{args.suffix}"
             ids = mc.decode_build(player_class, digits, wdata["talents"], desc_to_tab)
             if not ids:
                 raise ValueError("no talents decoded")

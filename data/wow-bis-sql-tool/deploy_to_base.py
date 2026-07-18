@@ -46,6 +46,7 @@ MAPPING = {
     "wotlk_pve_p3_bis.sql":    "42_wotlk_pve_p3_bis.sql",
     "wotlk_pve_p4_bis.sql":    "43_wotlk_pve_p4_bis.sql",
     "wotlk_pve_talents.sql":   "44_wotlk_pve_talents.sql",
+    "wotlk_pve_glyphs.sql":    "45_wotlk_pve_glyphs.sql",
 }
 
 
