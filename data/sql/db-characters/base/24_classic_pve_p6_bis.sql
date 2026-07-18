@@ -2,6 +2,11 @@
 -- Phase: 6  Mode: pve  Level: 60
 -- 17 specs
 
+-- Idempotency: remove this file's templates first so re-application cannot duplicate rows
+-- (the index table has no unique key; without this a re-applied file would append copies).
+DELETE FROM `mod_npc_talent_template_index` WHERE `playerSpec` IN ('Balance60PvEP6BiS', 'Cat60PvEP6BiS', 'Bear60PvEP6BiS', 'Restoration60PvEP6BiS', 'Marksmanship60PvEP6BiS', 'Fire60PvEP6BiS', 'Holy60PvEP6BiS', 'Protection60PvEP6BiS', 'Shadow60PvEP6BiS', 'Combat60PvEP6BiS', 'Elemental60PvEP6BiS', 'Enhancement60PvEP6BiS', 'Affliction60PvEP6BiS', 'Fury60PvEP6BiS');
+DELETE FROM `mod_npc_talent_template_gear` WHERE `playerSpec` IN ('Balance60PvEP6BiS', 'Cat60PvEP6BiS', 'Bear60PvEP6BiS', 'Restoration60PvEP6BiS', 'Marksmanship60PvEP6BiS', 'Fire60PvEP6BiS', 'Holy60PvEP6BiS', 'Protection60PvEP6BiS', 'Shadow60PvEP6BiS', 'Combat60PvEP6BiS', 'Elemental60PvEP6BiS', 'Enhancement60PvEP6BiS', 'Affliction60PvEP6BiS', 'Fury60PvEP6BiS');
+
 SET @MINLEVEL = 60;
 SET @MAXLEVEL = 69;
 SET @RACEMASK_ALL = 1791;

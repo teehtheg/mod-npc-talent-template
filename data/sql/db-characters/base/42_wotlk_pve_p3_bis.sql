@@ -2,6 +2,11 @@
 -- Expansion: wotlk  Mode: pve  Phase: 3
 -- 31 specs
 
+-- Idempotency: remove this file's templates first so re-application cannot duplicate rows
+-- (the index table has no unique key; without this a re-applied file would append copies).
+DELETE FROM `mod_npc_talent_template_index` WHERE `playerSpec` IN ('Blood80PvEP3BiSTank', 'Frost80PvEP3BiS', 'Unholy80PvEP3BiS', 'Balance80PvEP3BiS', 'Feral80PvEP3BiS', 'Feral80PvEP3BiSTank', 'Restoration80PvEP3BiSHeal', 'Beastmastery80PvEP3BiS', 'Marksmanship80PvEP3BiS', 'Survival80PvEP3BiS', 'Arcane80PvEP3BiS', 'Fire80PvEP3BiS', 'Holy80PvEP3BiSHeal', 'Protection80PvEP3BiSTank', 'Retribution80PvEP3BiS', 'Discipline80PvEP3BiSHeal', 'Shadow80PvEP3BiS', 'Assassination80PvEP3BiS', 'Combat80PvEP3BiS', 'Subtlety80PvEP3BiS', 'Elemental80PvEP3BiS', 'Enhancement80PvEP3BiS', 'Affliction80PvEP3BiS', 'Demonology80PvEP3BiS', 'Destruction80PvEP3BiS', 'Arms80PvEP3BiS', 'Fury80PvEP3BiS');
+DELETE FROM `mod_npc_talent_template_gear` WHERE `playerSpec` IN ('Blood80PvEP3BiSTank', 'Frost80PvEP3BiS', 'Unholy80PvEP3BiS', 'Balance80PvEP3BiS', 'Feral80PvEP3BiS', 'Feral80PvEP3BiSTank', 'Restoration80PvEP3BiSHeal', 'Beastmastery80PvEP3BiS', 'Marksmanship80PvEP3BiS', 'Survival80PvEP3BiS', 'Arcane80PvEP3BiS', 'Fire80PvEP3BiS', 'Holy80PvEP3BiSHeal', 'Protection80PvEP3BiSTank', 'Retribution80PvEP3BiS', 'Discipline80PvEP3BiSHeal', 'Shadow80PvEP3BiS', 'Assassination80PvEP3BiS', 'Combat80PvEP3BiS', 'Subtlety80PvEP3BiS', 'Elemental80PvEP3BiS', 'Enhancement80PvEP3BiS', 'Affliction80PvEP3BiS', 'Demonology80PvEP3BiS', 'Destruction80PvEP3BiS', 'Arms80PvEP3BiS', 'Fury80PvEP3BiS');
+
 SET @MINLEVEL = 80;
 SET @MAXLEVEL = 80;
 SET @RACEMASK_HUMAN = 1;
@@ -12,8 +17,8 @@ SET @ACTION = COALESCE((SELECT MAX(`gossipAction`) + 1 FROM `mod_npc_talent_temp
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` DISABLE KEYS */;
 INSERT INTO `mod_npc_talent_template_index` (`playerClass`, `playerSpec`, `gossipAction`, `gossipText`, `mask`, `minLevel`, `maxLevel`, `glyphOverride`, `talentOverride`, `category`) VALUES
-('Death Knight', 'Blood80PvEP3BiSTank', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_deathknight_bloodpresence:30|t|r Use Blood PvE P3 BiS Tank', 7, @MINLEVEL, @MAXLEVEL, 'Blood80PvP', 'Blood80PvP', 'WotLK Phase 3'),
-('Death Knight', 'Blood80PvEP3BiSTank', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_deathknight_bloodpresence:30|t|r Use Blood PvE P3 BiS Tank (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Blood80PvP', 'Blood80PvP', 'WotLK Phase 3');
+('Death Knight', 'Blood80PvEP3BiSTank', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_deathknight_bloodpresence:30|t|r Use Blood PvE P3 BiS Tank', 7, @MINLEVEL, @MAXLEVEL, 'Blood80PvP', 'Blood80PvE', 'WotLK Phase 3'),
+('Death Knight', 'Blood80PvEP3BiSTank', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_deathknight_bloodpresence:30|t|r Use Blood PvE P3 BiS Tank (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Blood80PvP', 'Blood80PvE', 'WotLK Phase 3');
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` ENABLE KEYS */;
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_gear` DISABLE KEYS */;
@@ -73,8 +78,8 @@ SET @ACTION = COALESCE((SELECT MAX(`gossipAction`) + 1 FROM `mod_npc_talent_temp
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` DISABLE KEYS */;
 INSERT INTO `mod_npc_talent_template_index` (`playerClass`, `playerSpec`, `gossipAction`, `gossipText`, `mask`, `minLevel`, `maxLevel`, `glyphOverride`, `talentOverride`, `category`) VALUES
-('Death Knight', 'Frost80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_deathknight_frostpresence:30|t|r Use Frost PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Frost80PvP', 'Frost80PvP', 'WotLK Phase 3'),
-('Death Knight', 'Frost80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_deathknight_frostpresence:30|t|r Use Frost PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Frost80PvP', 'Frost80PvP', 'WotLK Phase 3');
+('Death Knight', 'Frost80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_deathknight_frostpresence:30|t|r Use Frost PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Frost80PvP', 'Frost80PvE', 'WotLK Phase 3'),
+('Death Knight', 'Frost80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_deathknight_frostpresence:30|t|r Use Frost PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Frost80PvP', 'Frost80PvE', 'WotLK Phase 3');
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` ENABLE KEYS */;
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_gear` DISABLE KEYS */;
@@ -137,8 +142,8 @@ SET @ACTION = COALESCE((SELECT MAX(`gossipAction`) + 1 FROM `mod_npc_talent_temp
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` DISABLE KEYS */;
 INSERT INTO `mod_npc_talent_template_index` (`playerClass`, `playerSpec`, `gossipAction`, `gossipText`, `mask`, `minLevel`, `maxLevel`, `glyphOverride`, `talentOverride`, `category`) VALUES
-('Death Knight', 'Unholy80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_deathknight_unholypresence:30|t|r Use Unholy PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Unholy80PvP', 'Unholy80PvP', 'WotLK Phase 3'),
-('Death Knight', 'Unholy80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_deathknight_unholypresence:30|t|r Use Unholy PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Unholy80PvP', 'Unholy80PvP', 'WotLK Phase 3');
+('Death Knight', 'Unholy80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_deathknight_unholypresence:30|t|r Use Unholy PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Unholy80PvP', 'Unholy80PvE', 'WotLK Phase 3'),
+('Death Knight', 'Unholy80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_deathknight_unholypresence:30|t|r Use Unholy PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Unholy80PvP', 'Unholy80PvE', 'WotLK Phase 3');
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` ENABLE KEYS */;
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_gear` DISABLE KEYS */;
@@ -201,8 +206,8 @@ SET @ACTION = COALESCE((SELECT MAX(`gossipAction`) + 1 FROM `mod_npc_talent_temp
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` DISABLE KEYS */;
 INSERT INTO `mod_npc_talent_template_index` (`playerClass`, `playerSpec`, `gossipAction`, `gossipText`, `mask`, `minLevel`, `maxLevel`, `glyphOverride`, `talentOverride`, `category`) VALUES
-('Druid', 'Balance80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_nature_starfall:30|t|r Use Balance PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Balance80PvP', 'Balance80PvP', 'WotLK Phase 3'),
-('Druid', 'Balance80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_nature_starfall:30|t|r Use Balance PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Balance80PvP', 'Balance80PvP', 'WotLK Phase 3');
+('Druid', 'Balance80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_nature_starfall:30|t|r Use Balance PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Balance80PvP', 'Balance80PvE', 'WotLK Phase 3'),
+('Druid', 'Balance80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_nature_starfall:30|t|r Use Balance PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Balance80PvP', 'Balance80PvE', 'WotLK Phase 3');
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` ENABLE KEYS */;
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_gear` DISABLE KEYS */;
@@ -265,8 +270,8 @@ SET @ACTION = COALESCE((SELECT MAX(`gossipAction`) + 1 FROM `mod_npc_talent_temp
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` DISABLE KEYS */;
 INSERT INTO `mod_npc_talent_template_index` (`playerClass`, `playerSpec`, `gossipAction`, `gossipText`, `mask`, `minLevel`, `maxLevel`, `glyphOverride`, `talentOverride`, `category`) VALUES
-('Druid', 'Feral80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\ability_druid_catform:30|t|r Use Feral PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Feral80PvP', 'Feral80PvP', 'WotLK Phase 3'),
-('Druid', 'Feral80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\ability_druid_catform:30|t|r Use Feral PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Feral80PvP', 'Feral80PvP', 'WotLK Phase 3');
+('Druid', 'Feral80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\ability_druid_catform:30|t|r Use Feral PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Feral80PvP', 'Feral80PvE', 'WotLK Phase 3'),
+('Druid', 'Feral80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\ability_druid_catform:30|t|r Use Feral PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Feral80PvP', 'Feral80PvE', 'WotLK Phase 3');
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` ENABLE KEYS */;
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_gear` DISABLE KEYS */;
@@ -326,8 +331,8 @@ SET @ACTION = COALESCE((SELECT MAX(`gossipAction`) + 1 FROM `mod_npc_talent_temp
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` DISABLE KEYS */;
 INSERT INTO `mod_npc_talent_template_index` (`playerClass`, `playerSpec`, `gossipAction`, `gossipText`, `mask`, `minLevel`, `maxLevel`, `glyphOverride`, `talentOverride`, `category`) VALUES
-('Druid', 'Feral80PvEP3BiSTank', @ACTION+000, '|cff00ff00|TInterface\\icons\\ability_druid_catform:30|t|r Use Feral PvE P3 BiS Tank', 7, @MINLEVEL, @MAXLEVEL, 'Feral80PvP', 'Feral80PvP', 'WotLK Phase 3'),
-('Druid', 'Feral80PvEP3BiSTank', @ACTION+001, '|cff00ff00|TInterface\\icons\\ability_druid_catform:30|t|r Use Feral PvE P3 BiS Tank (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Feral80PvP', 'Feral80PvP', 'WotLK Phase 3');
+('Druid', 'Feral80PvEP3BiSTank', @ACTION+000, '|cff00ff00|TInterface\\icons\\ability_druid_catform:30|t|r Use Feral PvE P3 BiS Tank', 7, @MINLEVEL, @MAXLEVEL, 'Feral80PvP', 'Feral80PvE', 'WotLK Phase 3'),
+('Druid', 'Feral80PvEP3BiSTank', @ACTION+001, '|cff00ff00|TInterface\\icons\\ability_druid_catform:30|t|r Use Feral PvE P3 BiS Tank (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Feral80PvP', 'Feral80PvE', 'WotLK Phase 3');
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` ENABLE KEYS */;
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_gear` DISABLE KEYS */;
@@ -387,8 +392,8 @@ SET @ACTION = COALESCE((SELECT MAX(`gossipAction`) + 1 FROM `mod_npc_talent_temp
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` DISABLE KEYS */;
 INSERT INTO `mod_npc_talent_template_index` (`playerClass`, `playerSpec`, `gossipAction`, `gossipText`, `mask`, `minLevel`, `maxLevel`, `glyphOverride`, `talentOverride`, `category`) VALUES
-('Druid', 'Restoration80PvEP3BiSHeal', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_nature_healingtouch:30|t|r Use Restoration PvE P3 BiS Heal', 7, @MINLEVEL, @MAXLEVEL, 'Restoration80PvP', 'Restoration80PvP', 'WotLK Phase 3'),
-('Druid', 'Restoration80PvEP3BiSHeal', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_nature_healingtouch:30|t|r Use Restoration PvE P3 BiS Heal (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Restoration80PvP', 'Restoration80PvP', 'WotLK Phase 3');
+('Druid', 'Restoration80PvEP3BiSHeal', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_nature_healingtouch:30|t|r Use Restoration PvE P3 BiS Heal', 7, @MINLEVEL, @MAXLEVEL, 'Restoration80PvP', 'Restoration80PvE', 'WotLK Phase 3'),
+('Druid', 'Restoration80PvEP3BiSHeal', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_nature_healingtouch:30|t|r Use Restoration PvE P3 BiS Heal (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Restoration80PvP', 'Restoration80PvE', 'WotLK Phase 3');
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` ENABLE KEYS */;
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_gear` DISABLE KEYS */;
@@ -451,8 +456,8 @@ SET @ACTION = COALESCE((SELECT MAX(`gossipAction`) + 1 FROM `mod_npc_talent_temp
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` DISABLE KEYS */;
 INSERT INTO `mod_npc_talent_template_index` (`playerClass`, `playerSpec`, `gossipAction`, `gossipText`, `mask`, `minLevel`, `maxLevel`, `glyphOverride`, `talentOverride`, `category`) VALUES
-('Hunter', 'Beastmastery80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\ability_hunter_beasttaming:30|t|r Use Beastmastery PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Beastmastery80PvP', 'Beastmastery80PvP', 'WotLK Phase 3'),
-('Hunter', 'Beastmastery80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\ability_hunter_beasttaming:30|t|r Use Beastmastery PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Beastmastery80PvP', 'Beastmastery80PvP', 'WotLK Phase 3');
+('Hunter', 'Beastmastery80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\ability_hunter_beasttaming:30|t|r Use Beastmastery PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Beastmastery80PvP', 'Beastmastery80PvE', 'WotLK Phase 3'),
+('Hunter', 'Beastmastery80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\ability_hunter_beasttaming:30|t|r Use Beastmastery PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Beastmastery80PvP', 'Beastmastery80PvE', 'WotLK Phase 3');
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` ENABLE KEYS */;
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_gear` DISABLE KEYS */;
@@ -512,8 +517,8 @@ SET @ACTION = COALESCE((SELECT MAX(`gossipAction`) + 1 FROM `mod_npc_talent_temp
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` DISABLE KEYS */;
 INSERT INTO `mod_npc_talent_template_index` (`playerClass`, `playerSpec`, `gossipAction`, `gossipText`, `mask`, `minLevel`, `maxLevel`, `glyphOverride`, `talentOverride`, `category`) VALUES
-('Hunter', 'Marksmanship80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\ability_marksmanship:30|t|r Use Marksmanship PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Marksmanship80PvP', 'Marksmanship80PvP', 'WotLK Phase 3'),
-('Hunter', 'Marksmanship80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\ability_marksmanship:30|t|r Use Marksmanship PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Marksmanship80PvP', 'Marksmanship80PvP', 'WotLK Phase 3');
+('Hunter', 'Marksmanship80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\ability_marksmanship:30|t|r Use Marksmanship PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Marksmanship80PvP', 'Marksmanship80PvE', 'WotLK Phase 3'),
+('Hunter', 'Marksmanship80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\ability_marksmanship:30|t|r Use Marksmanship PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Marksmanship80PvP', 'Marksmanship80PvE', 'WotLK Phase 3');
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` ENABLE KEYS */;
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_gear` DISABLE KEYS */;
@@ -573,8 +578,8 @@ SET @ACTION = COALESCE((SELECT MAX(`gossipAction`) + 1 FROM `mod_npc_talent_temp
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` DISABLE KEYS */;
 INSERT INTO `mod_npc_talent_template_index` (`playerClass`, `playerSpec`, `gossipAction`, `gossipText`, `mask`, `minLevel`, `maxLevel`, `glyphOverride`, `talentOverride`, `category`) VALUES
-('Hunter', 'Survival80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\ability_Hunter_swiftstrike:30|t|r Use Survival PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Survival80PvP', 'Survival80PvP', 'WotLK Phase 3'),
-('Hunter', 'Survival80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\ability_Hunter_swiftstrike:30|t|r Use Survival PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Survival80PvP', 'Survival80PvP', 'WotLK Phase 3');
+('Hunter', 'Survival80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\ability_Hunter_swiftstrike:30|t|r Use Survival PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Survival80PvP', 'Survival80PvE', 'WotLK Phase 3'),
+('Hunter', 'Survival80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\ability_Hunter_swiftstrike:30|t|r Use Survival PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Survival80PvP', 'Survival80PvE', 'WotLK Phase 3');
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` ENABLE KEYS */;
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_gear` DISABLE KEYS */;
@@ -634,8 +639,8 @@ SET @ACTION = COALESCE((SELECT MAX(`gossipAction`) + 1 FROM `mod_npc_talent_temp
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` DISABLE KEYS */;
 INSERT INTO `mod_npc_talent_template_index` (`playerClass`, `playerSpec`, `gossipAction`, `gossipText`, `mask`, `minLevel`, `maxLevel`, `glyphOverride`, `talentOverride`, `category`) VALUES
-('Mage', 'Arcane80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_holy_magicalsentry:30|t|r Use Arcane PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Arcane80PvP', 'Arcane80PvP', 'WotLK Phase 3'),
-('Mage', 'Arcane80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_holy_magicalsentry:30|t|r Use Arcane PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Arcane80PvP', 'Arcane80PvP', 'WotLK Phase 3');
+('Mage', 'Arcane80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_holy_magicalsentry:30|t|r Use Arcane PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Arcane80PvP', 'Arcane80PvE', 'WotLK Phase 3'),
+('Mage', 'Arcane80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_holy_magicalsentry:30|t|r Use Arcane PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Arcane80PvP', 'Arcane80PvE', 'WotLK Phase 3');
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` ENABLE KEYS */;
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_gear` DISABLE KEYS */;
@@ -698,8 +703,8 @@ SET @ACTION = COALESCE((SELECT MAX(`gossipAction`) + 1 FROM `mod_npc_talent_temp
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` DISABLE KEYS */;
 INSERT INTO `mod_npc_talent_template_index` (`playerClass`, `playerSpec`, `gossipAction`, `gossipText`, `mask`, `minLevel`, `maxLevel`, `glyphOverride`, `talentOverride`, `category`) VALUES
-('Mage', 'Fire80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_fire_flamebolt:30|t|r Use Fire PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Fire80PvP', 'Fire80PvP', 'WotLK Phase 3'),
-('Mage', 'Fire80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_fire_flamebolt:30|t|r Use Fire PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Fire80PvP', 'Fire80PvP', 'WotLK Phase 3');
+('Mage', 'Fire80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_fire_flamebolt:30|t|r Use Fire PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Fire80PvP', 'Fire80PvE', 'WotLK Phase 3'),
+('Mage', 'Fire80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_fire_flamebolt:30|t|r Use Fire PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Fire80PvP', 'Fire80PvE', 'WotLK Phase 3');
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` ENABLE KEYS */;
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_gear` DISABLE KEYS */;
@@ -762,8 +767,8 @@ SET @ACTION = COALESCE((SELECT MAX(`gossipAction`) + 1 FROM `mod_npc_talent_temp
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` DISABLE KEYS */;
 INSERT INTO `mod_npc_talent_template_index` (`playerClass`, `playerSpec`, `gossipAction`, `gossipText`, `mask`, `minLevel`, `maxLevel`, `glyphOverride`, `talentOverride`, `category`) VALUES
-('Mage', 'Frost80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_frost_frostbolt02:30|t|r Use Frost PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Frost80PvP', 'Frost80PvP', 'WotLK Phase 3'),
-('Mage', 'Frost80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_frost_frostbolt02:30|t|r Use Frost PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Frost80PvP', 'Frost80PvP', 'WotLK Phase 3');
+('Mage', 'Frost80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_frost_frostbolt02:30|t|r Use Frost PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Frost80PvP', 'Frost80PvE', 'WotLK Phase 3'),
+('Mage', 'Frost80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_frost_frostbolt02:30|t|r Use Frost PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Frost80PvP', 'Frost80PvE', 'WotLK Phase 3');
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` ENABLE KEYS */;
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_gear` DISABLE KEYS */;
@@ -826,8 +831,8 @@ SET @ACTION = COALESCE((SELECT MAX(`gossipAction`) + 1 FROM `mod_npc_talent_temp
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` DISABLE KEYS */;
 INSERT INTO `mod_npc_talent_template_index` (`playerClass`, `playerSpec`, `gossipAction`, `gossipText`, `mask`, `minLevel`, `maxLevel`, `glyphOverride`, `talentOverride`, `category`) VALUES
-('Paladin', 'Holy80PvEP3BiSHeal', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_holy_holybolt:30|t|r Use Holy PvE P3 BiS Heal', 7, @MINLEVEL, @MAXLEVEL, 'Holy80PvP', 'Holy80PvP', 'WotLK Phase 3'),
-('Paladin', 'Holy80PvEP3BiSHeal', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_holy_holybolt:30|t|r Use Holy PvE P3 BiS Heal (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Holy80PvP', 'Holy80PvP', 'WotLK Phase 3');
+('Paladin', 'Holy80PvEP3BiSHeal', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_holy_holybolt:30|t|r Use Holy PvE P3 BiS Heal', 7, @MINLEVEL, @MAXLEVEL, 'Holy80PvP', 'Holy80PvE', 'WotLK Phase 3'),
+('Paladin', 'Holy80PvEP3BiSHeal', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_holy_holybolt:30|t|r Use Holy PvE P3 BiS Heal (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Holy80PvP', 'Holy80PvE', 'WotLK Phase 3');
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` ENABLE KEYS */;
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_gear` DISABLE KEYS */;
@@ -890,8 +895,8 @@ SET @ACTION = COALESCE((SELECT MAX(`gossipAction`) + 1 FROM `mod_npc_talent_temp
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` DISABLE KEYS */;
 INSERT INTO `mod_npc_talent_template_index` (`playerClass`, `playerSpec`, `gossipAction`, `gossipText`, `mask`, `minLevel`, `maxLevel`, `glyphOverride`, `talentOverride`, `category`) VALUES
-('Paladin', 'Protection80PvEP3BiSTank', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_holy_devotionaura:30|t|r Use Protection PvE P3 BiS Tank', 7, @MINLEVEL, @MAXLEVEL, 'Protection80PvP', 'Protection80PvP', 'WotLK Phase 3'),
-('Paladin', 'Protection80PvEP3BiSTank', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_holy_devotionaura:30|t|r Use Protection PvE P3 BiS Tank (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Protection80PvP', 'Protection80PvP', 'WotLK Phase 3');
+('Paladin', 'Protection80PvEP3BiSTank', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_holy_devotionaura:30|t|r Use Protection PvE P3 BiS Tank', 7, @MINLEVEL, @MAXLEVEL, 'Protection80PvP', 'Protection80PvE', 'WotLK Phase 3'),
+('Paladin', 'Protection80PvEP3BiSTank', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_holy_devotionaura:30|t|r Use Protection PvE P3 BiS Tank (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Protection80PvP', 'Protection80PvE', 'WotLK Phase 3');
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` ENABLE KEYS */;
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_gear` DISABLE KEYS */;
@@ -954,8 +959,8 @@ SET @ACTION = COALESCE((SELECT MAX(`gossipAction`) + 1 FROM `mod_npc_talent_temp
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` DISABLE KEYS */;
 INSERT INTO `mod_npc_talent_template_index` (`playerClass`, `playerSpec`, `gossipAction`, `gossipText`, `mask`, `minLevel`, `maxLevel`, `glyphOverride`, `talentOverride`, `category`) VALUES
-('Paladin', 'Retribution80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_holy_auraoflight:30|t|r Use Retribution PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Retribution80PvP', 'Retribution80PvP', 'WotLK Phase 3'),
-('Paladin', 'Retribution80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_holy_auraoflight:30|t|r Use Retribution PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Retribution80PvP', 'Retribution80PvP', 'WotLK Phase 3');
+('Paladin', 'Retribution80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_holy_auraoflight:30|t|r Use Retribution PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Retribution80PvP', 'Retribution80PvE', 'WotLK Phase 3'),
+('Paladin', 'Retribution80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_holy_auraoflight:30|t|r Use Retribution PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Retribution80PvP', 'Retribution80PvE', 'WotLK Phase 3');
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` ENABLE KEYS */;
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_gear` DISABLE KEYS */;
@@ -1015,8 +1020,8 @@ SET @ACTION = COALESCE((SELECT MAX(`gossipAction`) + 1 FROM `mod_npc_talent_temp
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` DISABLE KEYS */;
 INSERT INTO `mod_npc_talent_template_index` (`playerClass`, `playerSpec`, `gossipAction`, `gossipText`, `mask`, `minLevel`, `maxLevel`, `glyphOverride`, `talentOverride`, `category`) VALUES
-('Priest', 'Discipline80PvEP3BiSHeal', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_holy_wordfortitude:30|t|r Use Discipline PvE P3 BiS Heal', 7, @MINLEVEL, @MAXLEVEL, 'Discipline80PvP', 'Discipline80PvP', 'WotLK Phase 3'),
-('Priest', 'Discipline80PvEP3BiSHeal', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_holy_wordfortitude:30|t|r Use Discipline PvE P3 BiS Heal (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Discipline80PvP', 'Discipline80PvP', 'WotLK Phase 3');
+('Priest', 'Discipline80PvEP3BiSHeal', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_holy_wordfortitude:30|t|r Use Discipline PvE P3 BiS Heal', 7, @MINLEVEL, @MAXLEVEL, 'Discipline80PvP', 'Discipline80PvE', 'WotLK Phase 3'),
+('Priest', 'Discipline80PvEP3BiSHeal', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_holy_wordfortitude:30|t|r Use Discipline PvE P3 BiS Heal (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Discipline80PvP', 'Discipline80PvE', 'WotLK Phase 3');
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` ENABLE KEYS */;
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_gear` DISABLE KEYS */;
@@ -1079,8 +1084,8 @@ SET @ACTION = COALESCE((SELECT MAX(`gossipAction`) + 1 FROM `mod_npc_talent_temp
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` DISABLE KEYS */;
 INSERT INTO `mod_npc_talent_template_index` (`playerClass`, `playerSpec`, `gossipAction`, `gossipText`, `mask`, `minLevel`, `maxLevel`, `glyphOverride`, `talentOverride`, `category`) VALUES
-('Priest', 'Holy80PvEP3BiSHeal', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_holy_holybolt:30|t|r Use Holy PvE P3 BiS Heal', 7, @MINLEVEL, @MAXLEVEL, 'Holy80PvP', 'Holy80PvP', 'WotLK Phase 3'),
-('Priest', 'Holy80PvEP3BiSHeal', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_holy_holybolt:30|t|r Use Holy PvE P3 BiS Heal (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Holy80PvP', 'Holy80PvP', 'WotLK Phase 3');
+('Priest', 'Holy80PvEP3BiSHeal', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_holy_holybolt:30|t|r Use Holy PvE P3 BiS Heal', 7, @MINLEVEL, @MAXLEVEL, 'Holy80PvP', 'Holy80PvE', 'WotLK Phase 3'),
+('Priest', 'Holy80PvEP3BiSHeal', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_holy_holybolt:30|t|r Use Holy PvE P3 BiS Heal (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Holy80PvP', 'Holy80PvE', 'WotLK Phase 3');
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` ENABLE KEYS */;
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_gear` DISABLE KEYS */;
@@ -1143,8 +1148,8 @@ SET @ACTION = COALESCE((SELECT MAX(`gossipAction`) + 1 FROM `mod_npc_talent_temp
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` DISABLE KEYS */;
 INSERT INTO `mod_npc_talent_template_index` (`playerClass`, `playerSpec`, `gossipAction`, `gossipText`, `mask`, `minLevel`, `maxLevel`, `glyphOverride`, `talentOverride`, `category`) VALUES
-('Priest', 'Shadow80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_shadow_shadowwordpain:30|t|r Use Shadow PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Shadow80PvP', 'Shadow80PvP', 'WotLK Phase 3'),
-('Priest', 'Shadow80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_shadow_shadowwordpain:30|t|r Use Shadow PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Shadow80PvP', 'Shadow80PvP', 'WotLK Phase 3');
+('Priest', 'Shadow80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_shadow_shadowwordpain:30|t|r Use Shadow PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Shadow80PvP', 'Shadow80PvE', 'WotLK Phase 3'),
+('Priest', 'Shadow80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_shadow_shadowwordpain:30|t|r Use Shadow PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Shadow80PvP', 'Shadow80PvE', 'WotLK Phase 3');
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` ENABLE KEYS */;
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_gear` DISABLE KEYS */;
@@ -1207,8 +1212,8 @@ SET @ACTION = COALESCE((SELECT MAX(`gossipAction`) + 1 FROM `mod_npc_talent_temp
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` DISABLE KEYS */;
 INSERT INTO `mod_npc_talent_template_index` (`playerClass`, `playerSpec`, `gossipAction`, `gossipText`, `mask`, `minLevel`, `maxLevel`, `glyphOverride`, `talentOverride`, `category`) VALUES
-('Rogue', 'Assassination80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\ability_rogue_eviscerate:30|t|r Use Assassination PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Assassination80PvP', 'Assassination80PvP', 'WotLK Phase 3'),
-('Rogue', 'Assassination80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\ability_rogue_eviscerate:30|t|r Use Assassination PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Assassination80PvP', 'Assassination80PvP', 'WotLK Phase 3');
+('Rogue', 'Assassination80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\ability_rogue_eviscerate:30|t|r Use Assassination PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Assassination80PvP', 'Assassination80PvE', 'WotLK Phase 3'),
+('Rogue', 'Assassination80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\ability_rogue_eviscerate:30|t|r Use Assassination PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Assassination80PvP', 'Assassination80PvE', 'WotLK Phase 3');
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` ENABLE KEYS */;
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_gear` DISABLE KEYS */;
@@ -1271,8 +1276,8 @@ SET @ACTION = COALESCE((SELECT MAX(`gossipAction`) + 1 FROM `mod_npc_talent_temp
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` DISABLE KEYS */;
 INSERT INTO `mod_npc_talent_template_index` (`playerClass`, `playerSpec`, `gossipAction`, `gossipText`, `mask`, `minLevel`, `maxLevel`, `glyphOverride`, `talentOverride`, `category`) VALUES
-('Rogue', 'Combat80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\ability_backstab:30|t|r Use Combat PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Combat80PvP', 'Combat80PvP', 'WotLK Phase 3'),
-('Rogue', 'Combat80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\ability_backstab:30|t|r Use Combat PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Combat80PvP', 'Combat80PvP', 'WotLK Phase 3');
+('Rogue', 'Combat80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\ability_backstab:30|t|r Use Combat PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Combat80PvP', 'Combat80PvE', 'WotLK Phase 3'),
+('Rogue', 'Combat80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\ability_backstab:30|t|r Use Combat PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Combat80PvP', 'Combat80PvE', 'WotLK Phase 3');
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` ENABLE KEYS */;
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_gear` DISABLE KEYS */;
@@ -1335,8 +1340,8 @@ SET @ACTION = COALESCE((SELECT MAX(`gossipAction`) + 1 FROM `mod_npc_talent_temp
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` DISABLE KEYS */;
 INSERT INTO `mod_npc_talent_template_index` (`playerClass`, `playerSpec`, `gossipAction`, `gossipText`, `mask`, `minLevel`, `maxLevel`, `glyphOverride`, `talentOverride`, `category`) VALUES
-('Rogue', 'Subtlety80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\ability_stealth:30|t|r Use Subtlety PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Subtlety80PvP', 'Subtlety80PvP', 'WotLK Phase 3'),
-('Rogue', 'Subtlety80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\ability_stealth:30|t|r Use Subtlety PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Subtlety80PvP', 'Subtlety80PvP', 'WotLK Phase 3');
+('Rogue', 'Subtlety80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\ability_stealth:30|t|r Use Subtlety PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Subtlety80PvP', 'Subtlety80PvE', 'WotLK Phase 3'),
+('Rogue', 'Subtlety80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\ability_stealth:30|t|r Use Subtlety PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Subtlety80PvP', 'Subtlety80PvE', 'WotLK Phase 3');
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` ENABLE KEYS */;
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_gear` DISABLE KEYS */;
@@ -1399,8 +1404,8 @@ SET @ACTION = COALESCE((SELECT MAX(`gossipAction`) + 1 FROM `mod_npc_talent_temp
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` DISABLE KEYS */;
 INSERT INTO `mod_npc_talent_template_index` (`playerClass`, `playerSpec`, `gossipAction`, `gossipText`, `mask`, `minLevel`, `maxLevel`, `glyphOverride`, `talentOverride`, `category`) VALUES
-('Shaman', 'Elemental80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_nature_lightning:30|t|r Use Elemental PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Elemental80PvP', 'Elemental80PvP', 'WotLK Phase 3'),
-('Shaman', 'Elemental80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_nature_lightning:30|t|r Use Elemental PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Elemental80PvP', 'Elemental80PvP', 'WotLK Phase 3');
+('Shaman', 'Elemental80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_nature_lightning:30|t|r Use Elemental PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Elemental80PvP', 'Elemental80PvE', 'WotLK Phase 3'),
+('Shaman', 'Elemental80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_nature_lightning:30|t|r Use Elemental PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Elemental80PvP', 'Elemental80PvE', 'WotLK Phase 3');
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` ENABLE KEYS */;
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_gear` DISABLE KEYS */;
@@ -1463,8 +1468,8 @@ SET @ACTION = COALESCE((SELECT MAX(`gossipAction`) + 1 FROM `mod_npc_talent_temp
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` DISABLE KEYS */;
 INSERT INTO `mod_npc_talent_template_index` (`playerClass`, `playerSpec`, `gossipAction`, `gossipText`, `mask`, `minLevel`, `maxLevel`, `glyphOverride`, `talentOverride`, `category`) VALUES
-('Shaman', 'Enhancement80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_nature_lightningshield:30|t|r Use Enhancement PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Enhancement80PvP', 'Enhancement80PvP', 'WotLK Phase 3'),
-('Shaman', 'Enhancement80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_nature_lightningshield:30|t|r Use Enhancement PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Enhancement80PvP', 'Enhancement80PvP', 'WotLK Phase 3');
+('Shaman', 'Enhancement80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_nature_lightningshield:30|t|r Use Enhancement PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Enhancement80PvP', 'Enhancement80PvE', 'WotLK Phase 3'),
+('Shaman', 'Enhancement80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_nature_lightningshield:30|t|r Use Enhancement PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Enhancement80PvP', 'Enhancement80PvE', 'WotLK Phase 3');
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` ENABLE KEYS */;
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_gear` DISABLE KEYS */;
@@ -1527,8 +1532,8 @@ SET @ACTION = COALESCE((SELECT MAX(`gossipAction`) + 1 FROM `mod_npc_talent_temp
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` DISABLE KEYS */;
 INSERT INTO `mod_npc_talent_template_index` (`playerClass`, `playerSpec`, `gossipAction`, `gossipText`, `mask`, `minLevel`, `maxLevel`, `glyphOverride`, `talentOverride`, `category`) VALUES
-('Shaman', 'Restoration80PvEP3BiSHeal', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_nature_magicimmunity:30|t|r Use Restoration PvE P3 BiS Heal', 7, @MINLEVEL, @MAXLEVEL, 'Restoration80PvP', 'Restoration80PvP', 'WotLK Phase 3'),
-('Shaman', 'Restoration80PvEP3BiSHeal', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_nature_magicimmunity:30|t|r Use Restoration PvE P3 BiS Heal (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Restoration80PvP', 'Restoration80PvP', 'WotLK Phase 3');
+('Shaman', 'Restoration80PvEP3BiSHeal', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_nature_magicimmunity:30|t|r Use Restoration PvE P3 BiS Heal', 7, @MINLEVEL, @MAXLEVEL, 'Restoration80PvP', 'Restoration80PvE', 'WotLK Phase 3'),
+('Shaman', 'Restoration80PvEP3BiSHeal', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_nature_magicimmunity:30|t|r Use Restoration PvE P3 BiS Heal (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Restoration80PvP', 'Restoration80PvE', 'WotLK Phase 3');
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` ENABLE KEYS */;
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_gear` DISABLE KEYS */;
@@ -1591,8 +1596,8 @@ SET @ACTION = COALESCE((SELECT MAX(`gossipAction`) + 1 FROM `mod_npc_talent_temp
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` DISABLE KEYS */;
 INSERT INTO `mod_npc_talent_template_index` (`playerClass`, `playerSpec`, `gossipAction`, `gossipText`, `mask`, `minLevel`, `maxLevel`, `glyphOverride`, `talentOverride`, `category`) VALUES
-('Warlock', 'Affliction80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_shadow_deathcoil:30|t|r Use Affliction PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Affliction80PvP', 'Affliction80PvP', 'WotLK Phase 3'),
-('Warlock', 'Affliction80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_shadow_deathcoil:30|t|r Use Affliction PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Affliction80PvP', 'Affliction80PvP', 'WotLK Phase 3');
+('Warlock', 'Affliction80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_shadow_deathcoil:30|t|r Use Affliction PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Affliction80PvP', 'Affliction80PvE', 'WotLK Phase 3'),
+('Warlock', 'Affliction80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_shadow_deathcoil:30|t|r Use Affliction PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Affliction80PvP', 'Affliction80PvE', 'WotLK Phase 3');
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` ENABLE KEYS */;
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_gear` DISABLE KEYS */;
@@ -1655,8 +1660,8 @@ SET @ACTION = COALESCE((SELECT MAX(`gossipAction`) + 1 FROM `mod_npc_talent_temp
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` DISABLE KEYS */;
 INSERT INTO `mod_npc_talent_template_index` (`playerClass`, `playerSpec`, `gossipAction`, `gossipText`, `mask`, `minLevel`, `maxLevel`, `glyphOverride`, `talentOverride`, `category`) VALUES
-('Warlock', 'Demonology80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_shadow_metamorphosis:30|t|r Use Demonology PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Demonology80PvP', 'Demonology80PvP', 'WotLK Phase 3'),
-('Warlock', 'Demonology80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_shadow_metamorphosis:30|t|r Use Demonology PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Demonology80PvP', 'Demonology80PvP', 'WotLK Phase 3');
+('Warlock', 'Demonology80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_shadow_metamorphosis:30|t|r Use Demonology PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Demonology80PvP', 'Demonology80PvE', 'WotLK Phase 3'),
+('Warlock', 'Demonology80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_shadow_metamorphosis:30|t|r Use Demonology PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Demonology80PvP', 'Demonology80PvE', 'WotLK Phase 3');
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` ENABLE KEYS */;
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_gear` DISABLE KEYS */;
@@ -1719,8 +1724,8 @@ SET @ACTION = COALESCE((SELECT MAX(`gossipAction`) + 1 FROM `mod_npc_talent_temp
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` DISABLE KEYS */;
 INSERT INTO `mod_npc_talent_template_index` (`playerClass`, `playerSpec`, `gossipAction`, `gossipText`, `mask`, `minLevel`, `maxLevel`, `glyphOverride`, `talentOverride`, `category`) VALUES
-('Warlock', 'Destruction80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_shadow_rainoffire:30|t|r Use Destruction PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Destruction80PvP', 'Destruction80PvP', 'WotLK Phase 3'),
-('Warlock', 'Destruction80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_shadow_rainoffire:30|t|r Use Destruction PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Destruction80PvP', 'Destruction80PvP', 'WotLK Phase 3');
+('Warlock', 'Destruction80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\spell_shadow_rainoffire:30|t|r Use Destruction PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Destruction80PvP', 'Destruction80PvE', 'WotLK Phase 3'),
+('Warlock', 'Destruction80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\spell_shadow_rainoffire:30|t|r Use Destruction PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Destruction80PvP', 'Destruction80PvE', 'WotLK Phase 3');
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` ENABLE KEYS */;
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_gear` DISABLE KEYS */;
@@ -1771,7 +1776,7 @@ INSERT INTO `mod_npc_talent_template_gear` (`playerClass`, `playerSpec`, `player
 ('Warlock', 'Destruction80PvEP3BiS', @RACEMASK_H, 10, 45495, 0, 3545, 0, 0, 0, 0),
 ('Warlock', 'Destruction80PvEP3BiS', @RACEMASK_H, 11, 47489, 0, 3563, 0, 0, 0, 0),
 ('Warlock', 'Destruction80PvEP3BiS', @RACEMASK_H, 12, 45518, 0, 0, 0, 0, 0, 0),
-('Warlock', 'Destruction80PvEP3BiS', @RACEMASK_H, 13, 47477, 0, 0, 0, 0, 0, 0),
+('Warlock', 'Destruction80PvEP3BiS', @RACEMASK_H, 13, 47188, 0, 0, 0, 0, 0, 0),
 ('Warlock', 'Destruction80PvEP3BiS', @RACEMASK_H, 14, 47551, 3722, 3520, 0, 0, 0, 0),
 ('Warlock', 'Destruction80PvEP3BiS', @RACEMASK_H, 15, 47422, 3834, 3545, 0, 0, 0, 0),
 ('Warlock', 'Destruction80PvEP3BiS', @RACEMASK_H, 16, 47437, 0, 0, 0, 0, 0, 0),
@@ -1783,8 +1788,8 @@ SET @ACTION = COALESCE((SELECT MAX(`gossipAction`) + 1 FROM `mod_npc_talent_temp
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` DISABLE KEYS */;
 INSERT INTO `mod_npc_talent_template_index` (`playerClass`, `playerSpec`, `gossipAction`, `gossipText`, `mask`, `minLevel`, `maxLevel`, `glyphOverride`, `talentOverride`, `category`) VALUES
-('Warrior', 'Arms80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\ability_rogue_eviscerate:30|t|r Use Arms PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Arms80PvP', 'Arms80PvP', 'WotLK Phase 3'),
-('Warrior', 'Arms80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\ability_rogue_eviscerate:30|t|r Use Arms PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Arms80PvP', 'Arms80PvP', 'WotLK Phase 3');
+('Warrior', 'Arms80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\ability_rogue_eviscerate:30|t|r Use Arms PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Arms80PvP', 'Arms80PvE', 'WotLK Phase 3'),
+('Warrior', 'Arms80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\ability_rogue_eviscerate:30|t|r Use Arms PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Arms80PvP', 'Arms80PvE', 'WotLK Phase 3');
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` ENABLE KEYS */;
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_gear` DISABLE KEYS */;
@@ -1844,8 +1849,8 @@ SET @ACTION = COALESCE((SELECT MAX(`gossipAction`) + 1 FROM `mod_npc_talent_temp
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` DISABLE KEYS */;
 INSERT INTO `mod_npc_talent_template_index` (`playerClass`, `playerSpec`, `gossipAction`, `gossipText`, `mask`, `minLevel`, `maxLevel`, `glyphOverride`, `talentOverride`, `category`) VALUES
-('Warrior', 'Fury80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\ability_warrior_innerrage:30|t|r Use Fury PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Fury80PvP', 'Fury80PvP', 'WotLK Phase 3'),
-('Warrior', 'Fury80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\ability_warrior_innerrage:30|t|r Use Fury PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Fury80PvP', 'Fury80PvP', 'WotLK Phase 3');
+('Warrior', 'Fury80PvEP3BiS', @ACTION+000, '|cff00ff00|TInterface\\icons\\ability_warrior_innerrage:30|t|r Use Fury PvE P3 BiS', 7, @MINLEVEL, @MAXLEVEL, 'Fury80PvP', 'Fury80PvE', 'WotLK Phase 3'),
+('Warrior', 'Fury80PvEP3BiS', @ACTION+001, '|cff00ff00|TInterface\\icons\\ability_warrior_innerrage:30|t|r Use Fury PvE P3 BiS (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Fury80PvP', 'Fury80PvE', 'WotLK Phase 3');
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` ENABLE KEYS */;
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_gear` DISABLE KEYS */;
@@ -1908,8 +1913,8 @@ SET @ACTION = COALESCE((SELECT MAX(`gossipAction`) + 1 FROM `mod_npc_talent_temp
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` DISABLE KEYS */;
 INSERT INTO `mod_npc_talent_template_index` (`playerClass`, `playerSpec`, `gossipAction`, `gossipText`, `mask`, `minLevel`, `maxLevel`, `glyphOverride`, `talentOverride`, `category`) VALUES
-('Warrior', 'Protection80PvEP3BiSTank', @ACTION+000, '|cff00ff00|TInterface\\icons\\ability_warrior_defensivestance:30|t|r Use Protection PvE P3 BiS Tank', 7, @MINLEVEL, @MAXLEVEL, 'Protection80PvP', 'Protection80PvP', 'WotLK Phase 3'),
-('Warrior', 'Protection80PvEP3BiSTank', @ACTION+001, '|cff00ff00|TInterface\\icons\\ability_warrior_defensivestance:30|t|r Use Protection PvE P3 BiS Tank (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Protection80PvP', 'Protection80PvP', 'WotLK Phase 3');
+('Warrior', 'Protection80PvEP3BiSTank', @ACTION+000, '|cff00ff00|TInterface\\icons\\ability_warrior_defensivestance:30|t|r Use Protection PvE P3 BiS Tank', 7, @MINLEVEL, @MAXLEVEL, 'Protection80PvP', 'Protection80PvE', 'WotLK Phase 3'),
+('Warrior', 'Protection80PvEP3BiSTank', @ACTION+001, '|cff00ff00|TInterface\\icons\\ability_warrior_defensivestance:30|t|r Use Protection PvE P3 BiS Tank (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, 'Protection80PvP', 'Protection80PvE', 'WotLK Phase 3');
 /*!40000 ALTER TABLE `mod_npc_talent_template_index` ENABLE KEYS */;
 
 /*!40000 ALTER TABLE `mod_npc_talent_template_gear` DISABLE KEYS */;

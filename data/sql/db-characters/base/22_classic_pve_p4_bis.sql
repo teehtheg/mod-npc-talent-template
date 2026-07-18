@@ -2,6 +2,11 @@
 -- Phase: 4  Mode: pve  Level: 60
 -- 16 specs
 
+-- Idempotency: remove this file's templates first so re-application cannot duplicate rows
+-- (the index table has no unique key; without this a re-applied file would append copies).
+DELETE FROM `mod_npc_talent_template_index` WHERE `playerSpec` IN ('Balance60PvEP4BiS', 'Cat60PvEP4BiS', 'Bear60PvEP4BiS', 'Restoration60PvEP4BiS', 'Marksmanship60PvEP4BiS', 'Fire60PvEP4BiS', 'Holy60PvEP4BiS', 'Shadow60PvEP4BiS', 'Combat60PvEP4BiS', 'Elemental60PvEP4BiS', 'Enhancement60PvEP4BiS', 'Affliction60PvEP4BiS', 'Fury60PvEP4BiS', 'Protection60PvEP4BiS');
+DELETE FROM `mod_npc_talent_template_gear` WHERE `playerSpec` IN ('Balance60PvEP4BiS', 'Cat60PvEP4BiS', 'Bear60PvEP4BiS', 'Restoration60PvEP4BiS', 'Marksmanship60PvEP4BiS', 'Fire60PvEP4BiS', 'Holy60PvEP4BiS', 'Shadow60PvEP4BiS', 'Combat60PvEP4BiS', 'Elemental60PvEP4BiS', 'Enhancement60PvEP4BiS', 'Affliction60PvEP4BiS', 'Fury60PvEP4BiS', 'Protection60PvEP4BiS');
+
 SET @MINLEVEL = 60;
 SET @MAXLEVEL = 69;
 SET @RACEMASK_ALL = 1791;
@@ -89,8 +94,7 @@ INSERT INTO `mod_npc_talent_template_gear` (`playerClass`, `playerSpec`, `player
 ('Druid', 'Bear60PvEP4BiS', @RACEMASK_ALL, 12, 19406, 0, 0, 0, 0, 0, 0),
 ('Druid', 'Bear60PvEP4BiS', @RACEMASK_ALL, 13, 13965, 0, 0, 0, 0, 0, 0),
 ('Druid', 'Bear60PvEP4BiS', @RACEMASK_ALL, 14, 17107, 1889, 0, 0, 0, 0, 0),
-('Druid', 'Bear60PvEP4BiS', @RACEMASK_ALL, 15, 9449, 1900, 0, 0, 0, 0, 0),
-('Druid', 'Bear60PvEP4BiS', @RACEMASK_ALL, 17, 9449, 0, 0, 0, 0, 0, 0);
+('Druid', 'Bear60PvEP4BiS', @RACEMASK_ALL, 15, 9449, 1900, 0, 0, 0, 0, 0);
 /*!40000 ALTER TABLE `mod_npc_talent_template_gear` ENABLE KEYS */;
 
 -- ===== Druid Restoration60PvEP4BiS =====
