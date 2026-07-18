@@ -1776,7 +1776,7 @@ INSERT INTO `mod_npc_talent_template_gear` (`playerClass`, `playerSpec`, `player
 ('Warlock', 'Destruction80PvEP3BiS', @RACEMASK_H, 10, 45495, 0, 3545, 0, 0, 0, 0),
 ('Warlock', 'Destruction80PvEP3BiS', @RACEMASK_H, 11, 47489, 0, 3563, 0, 0, 0, 0),
 ('Warlock', 'Destruction80PvEP3BiS', @RACEMASK_H, 12, 45518, 0, 0, 0, 0, 0, 0),
-('Warlock', 'Destruction80PvEP3BiS', @RACEMASK_H, 13, 47477, 0, 0, 0, 0, 0, 0),
+('Warlock', 'Destruction80PvEP3BiS', @RACEMASK_H, 13, 47188, 0, 0, 0, 0, 0, 0),
 ('Warlock', 'Destruction80PvEP3BiS', @RACEMASK_H, 14, 47551, 3722, 3520, 0, 0, 0, 0),
 ('Warlock', 'Destruction80PvEP3BiS', @RACEMASK_H, 15, 47422, 3834, 3545, 0, 0, 0, 0),
 ('Warlock', 'Destruction80PvEP3BiS', @RACEMASK_H, 16, 47437, 0, 0, 0, 0, 0, 0),
