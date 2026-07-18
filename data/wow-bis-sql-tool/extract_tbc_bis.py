@@ -65,18 +65,37 @@ TOC_TO_INV_SLOTS: dict[str, list[int]] = {
     "Trinkets": [13, 14],
     "Main Hand": [16],
     "Mainhand": [16],
+    "Main Hand Weapon": [16],
+    "Main Hand Weapons": [16],
+    "Main-Hand Weapon": [16],
+    "Main-Hand Weapons": [16],
+    "Mainhand Weapons": [16],
     "Off Hand": [17],
     "Offhand": [17],
+    "Off Hand Weapon": [17],
+    "Off Hand Weapons": [17],
+    "Off-Hand Weapon": [17],
+    "Off-Hand Weapons": [17],
     "Shield": [17],
     # Weapons with only one item → main hand; with two → main + off
     "Weapon": [16, 17],
     "Weapons": [16, 17],
     "1H Weapon": [16],
     "1H Weapons": [16],
+    "One Hand Weapons": [16],
+    "One-Hand Weapons": [16],
+    "One Handed Weapons": [16],
+    "One-Handed Weapons": [16],
     "2H Weapon": [16],
     "2H Weapons": [16],
+    "Two Hand Weapons": [16],
+    "Two-Hand Weapons": [16],
+    "Two Handed Weapons": [16],
+    "Two-Handed Weapons": [16],
     "Staff": [16],
     "Staves": [16],
+    "Polearm": [16],
+    "Polearms": [16],
     "Offhands": [17],
     "Shield": [17],
     "Shields": [17],
@@ -103,6 +122,18 @@ TOC_TO_INV_SLOTS: dict[str, list[int]] = {
     "Guns": [18],
     "Crossbow": [18],
     "Crossbows": [18],
+}
+
+# Headings whose main-hand pick is a two-handed weapon: it occupies both hands,
+# so any off-hand the guide also lists (some pages carry a dual-wield alternative
+# section too) must not be applied on top of it.
+_TWO_HANDED_TOC = {
+    k.lower() for k in (
+        "2H Weapon", "2H Weapons",
+        "Two Hand Weapons", "Two-Hand Weapons",
+        "Two Handed Weapons", "Two-Handed Weapons",
+        "Staff", "Staves", "Polearm", "Polearms",
+    )
 }
 
 # inv_slot (1-based WoW gear slot) → pos (0-based column in mod_npc_talent_template_gear)
@@ -202,6 +233,7 @@ def extract_bis_by_slot(markup_text: str) -> dict[int, int]:
     """
     parts = re.split(r'\[h3 [^\]]*toc="([^"]+)"[^\]]*\]', markup_text)
     result: dict[int, int] = {}
+    filled_by: dict[int, str] = {}  # slot -> heading that filled it (for the 2H rule)
 
     for i in range(1, len(parts) - 1, 2):
         heading = parts[i].strip()  # strip leading/trailing whitespace
@@ -219,7 +251,8 @@ def extract_bis_by_slot(markup_text: str) -> dict[int, int]:
         bis_items: list[int] = []
         first_items: list[int] = []  # fallback: first data-row item per table
         for table_content in tables:
-            rows = re.findall(r"\[tr\](.*?)\[/tr\]", table_content, re.S)
+            # Tolerate a malformed row-closing tag ("[/tr}" appears in some guides).
+            rows = re.findall(r"\[tr\](.*?)\[/tr[\]\}]", table_content, re.S)
             table_first: int | None = None
             for row in rows:
                 tds = re.findall(r"\[td[^\]]*\](.*?)\[/td\]", row, re.S)
@@ -245,6 +278,14 @@ def extract_bis_by_slot(markup_text: str) -> dict[int, int]:
         for j, slot in enumerate(slots):
             if j < len(picks) and slot not in result:
                 result[slot] = picks[j]
+                filled_by[slot] = heading
+
+    # A two-handed main-hand occupies both hands: drop any off-hand that a
+    # secondary section may have added (e.g. an Arms guide that also lists a
+    # dual-wield alternative under "Off Hand Weapons").
+    if filled_by.get(16, "").lower() in _TWO_HANDED_TOC and 17 in result:
+        del result[17]
+        filled_by.pop(17, None)
 
     return result
 

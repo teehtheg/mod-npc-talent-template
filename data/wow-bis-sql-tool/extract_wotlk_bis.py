@@ -430,8 +430,11 @@ def extract_planner_hashes_from_markup(markup: str) -> dict[str, str]:
     Example hash: warlock/gnome/BgBQ...
     """
     result: dict[str, str] = {}
+    # Match an inner [tab ... name="..."] block, but NOT the [tabs name="..."]
+    # container tag (guides wrap tabs in [tabs name="BiS"] ... which would
+    # otherwise all collapse under one "bis" key and hide the real per-phase tab).
     tab_pattern = re.compile(
-        r'\[tab[^\]]*name="([^"]+)"[^\]]*\](.*?)\[/tab\]', re.S | re.I
+        r'\[tab(?=[\s\]])[^\]]*name="([^"]+)"[^\]]*\](.*?)\[/tab\]', re.S | re.I
     )
     planner_pattern = re.compile(r"\[gear-planner=([^\]]+)\]", re.I)
 
@@ -653,6 +656,24 @@ def to_sql_gear_rows(
     return rows
 
 
+def _select_primary_tab(tab_keys, phase: int | None) -> str:
+    """Choose the tab that represents this phase's BiS.
+
+    Guides often carry several tabs — the current-phase BiS plus earlier-phase
+    "Progression" tabs. Prefer a tab whose name names the target phase, then any
+    non-progression tab, then fall back to the first tab.
+    """
+    keys = list(tab_keys)
+    if phase is not None:
+        for k in keys:
+            if f"phase {phase}" in k:
+                return k
+    for k in keys:
+        if "progression" not in k:
+            return k
+    return keys[0]
+
+
 def render_sql(
     player_class: str,
     spec_base: str,
@@ -660,25 +681,33 @@ def render_sql(
     suffix: str,
     talent_override_suffix: str,
     category: str = "",
+    glyph_override_suffix: str | None = None,
 ) -> str:
     player_spec = f"{spec_base}{suffix}"
     icon = SPEC_ICONS.get((player_class, spec_base), "inv_misc_questionmark")
     spec_label = suffix_to_label(suffix)
     gossip_text = f"|cff00ff00|TInterface\\\\icons\\\\{icon}:30|t|r Use {spec_base} {spec_label}"
     talent_spec = f"{spec_base}{talent_override_suffix}"
+    # Glyphs use their own override set (glyph data is keyed by GlyphProperties IDs,
+    # which we don't generate for PvE yet — see extract_wotlk_talents.py); default to
+    # the talent override set when no separate glyph suffix is given.
+    glyph_spec = f"{spec_base}{glyph_override_suffix}" if glyph_override_suffix else talent_spec
 
     decoded_by_tab = {tab: decode_planner_hash(h) for tab, h in planners.items()}
 
     has_alliance_tab = "alliance" in decoded_by_tab
     has_horde_tab = "horde" in decoded_by_tab
 
+    phase_match = re.search(r"P(\d+)BiS", suffix)
+    phase = int(phase_match.group(1)) if phase_match else None
+
     if has_alliance_tab:
         alliance_slots = decoded_by_tab["alliance"]
     elif "default" in decoded_by_tab:
         alliance_slots = decoded_by_tab["default"]
     else:
-        first_key = next(iter(decoded_by_tab))
-        alliance_slots = decoded_by_tab[first_key]
+        primary_key = _select_primary_tab(decoded_by_tab.keys(), phase)
+        alliance_slots = decoded_by_tab[primary_key]
 
     if has_horde_tab:
         horde_slots = decoded_by_tab["horde"]
@@ -718,11 +747,11 @@ def render_sql(
     )
     lines.append(
         f"('{player_class}', '{player_spec}', @ACTION+000, "
-        f"'{gossip_text}', 7, @MINLEVEL, @MAXLEVEL, '{talent_spec}', '{talent_spec}', '{category}'),"
+        f"'{gossip_text}', 7, @MINLEVEL, @MAXLEVEL, '{glyph_spec}', '{talent_spec}', '{category}'),"
     )
     lines.append(
         f"('{player_class}', '{player_spec}', @ACTION+001, "
-        f"'{gossip_text} (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, '{talent_spec}', '{talent_spec}', '{category}');"
+        f"'{gossip_text} (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, '{glyph_spec}', '{talent_spec}', '{category}');"
     )
     lines.append("/*!40000 ALTER TABLE `mod_npc_talent_template_index` ENABLE KEYS */;")
     lines.append("")

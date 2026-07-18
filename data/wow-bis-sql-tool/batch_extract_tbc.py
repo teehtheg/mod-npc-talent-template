@@ -26,6 +26,8 @@ import urllib.request
 import re
 from pathlib import Path
 
+from sql_idempotency import idempotency_lines_from_sql
+
 
 # -------------------------------------------------------------------------
 # Spec definitions
@@ -336,7 +338,6 @@ def main() -> None:
         "SET @RACEMASK_ALL = 1791;",
         "",
     ]
-    header = "\n".join(header_lines)
 
     blocks: list[str] = []
     errors: list[str] = []
@@ -369,6 +370,16 @@ def main() -> None:
             blocks.append("")
             errors.append(f"{pcls}/{pspec}: {exc}")
         time.sleep(0.2)
+
+    # Prepend an idempotency DELETE block (before the SET constants) so re-applying
+    # this file cannot duplicate rows. Derived from the emitted INSERTs.
+    idem = idempotency_lines_from_sql("\n".join(blocks))
+    if idem:
+        for i, ln in enumerate(header_lines):
+            if ln.startswith("SET "):
+                header_lines[i:i] = idem + [""]
+                break
+    header = "\n".join(header_lines)
 
     out_path.write_text(header + "\n".join(blocks) + "\n", encoding="utf-8")
     print(f"\nWrote: {out_path}")

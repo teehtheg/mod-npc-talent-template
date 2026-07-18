@@ -29,12 +29,17 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+from sql_idempotency import idempotency_lines
+
 
 _GUIDE_BASE = "https://www.wowhead.com/guides"
 _TALENTS_DATA_URL = "https://nether.wowhead.com/classic/data/talents-classic?dv=17"
 
 # Canonical class-tree order (left-to-right in build string) -> Wowhead tree description name
 CLASS_TREES: dict[str, list[str]] = {
+    # WotLK-only class (unused by the classic scraper; needed when decode_build is
+    # reused for WotLK talents). Tree order matches the talent-calc URL: Blood/Frost/Unholy.
+    "death knight": ["DeathKnightBlood",  "DeathKnightFrost",    "DeathKnightUnholy"],
     "druid":   ["DruidBalance",           "DruidFeralCombat",    "DruidRestoration"],
     "hunter":  ["HunterBeastMastery",     "HunterMarksmanship",  "HunterSurvival"],
     "mage":    ["MageArcane",             "MageFire",            "MageFrost"],
@@ -346,8 +351,12 @@ def render_sql(entries: list[tuple[str, str, list[int]]]) -> str:
         "-- Auto-generated Classic talent templates (suffix: 60PvE)",
         f"-- {len(entries)} specs",
         "",
-        "/*!40000 ALTER TABLE `mod_npc_talent_template_talents` DISABLE KEYS */;",
     ]
+    # Idempotency DELETE block (before the INSERT) so re-applying cannot duplicate rows.
+    idem = idempotency_lines(["talents"], [f"{pspec}60PvE" for _pcls, pspec, _ids in entries])
+    if idem:
+        lines += idem + [""]
+    lines.append("/*!40000 ALTER TABLE `mod_npc_talent_template_talents` DISABLE KEYS */;")
     rows: list[str] = []
     for pcls, pspec, ids in entries:
         for spell_id in ids:

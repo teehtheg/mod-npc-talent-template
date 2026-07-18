@@ -348,18 +348,34 @@ def _fill_slots(
     result: dict[int, int],
     slots: list[int],
     tables: list[str],
+    force: bool = False,
 ) -> None:
-    """Fill empty slot entries in result from tables."""
-    needed = sum(1 for s in slots if s not in result)
-    if needed == 0:
+    """Fill empty slot entries in result from tables, positionally.
+
+    The i-th BiS item fills the i-th slot, so an already-filled leading slot
+    (e.g. main-hand set by a separate "Weapons" section) does not cause a later
+    slot (e.g. relic/off-hand from a combined "Weapons and Idols" section) to be
+    filled with the wrong item. If the table BiS-tags fewer items than slots, the
+    trailing slots are left empty rather than reusing an earlier item — a relic
+    slot with no idol in the guide stays empty instead of duplicating the weapon.
+
+    `force=True` overwrites an already-filled slot. Used for a dedicated "Shields"
+    section so a shield wins the off-hand slot over an "Off-Hand Weapons" section
+    that a tank guide also lists (whichever appeared first would otherwise win).
+    """
+    if not force and all(slot in result for slot in slots):
         return
-    items = _extract_bis_items(tables, needed)
-    item_iter = iter(items)
-    for slot in slots:
-        if slot not in result:
-            item_id = next(item_iter, None)
-            if item_id is not None:
-                result[slot] = item_id
+    items = _extract_bis_items(tables, len(slots))
+    for i, slot in enumerate(slots):
+        if slot in result and not force:
+            continue
+        if i < len(items) and items[i] is not None:
+            result[slot] = items[i]
+
+
+# Dedicated shield headings: a shield wins the off-hand slot over an
+# "Off-Hand Weapons" section that tank/1H guides also list.
+_SHIELD_TOC = {"shield", "shields"}
 
 
 def _handle_section(
@@ -381,7 +397,7 @@ def _handle_section(
                 file=sys.stderr,
             )
         return
-    _fill_slots(result, slots, tables)
+    _fill_slots(result, slots, tables, force=slot_key.strip().lower() in _SHIELD_TOC)
 
 
 def extract_bis_by_slot(markup_text: str) -> dict[int, int]:
