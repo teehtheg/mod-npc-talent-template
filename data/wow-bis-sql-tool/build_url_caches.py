@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Build TBC URL cache files for phases 1-3 based on known URL patterns,
+Build TBC URL cache files for phases 0-5 based on known URL patterns,
 without making any HTTP requests. Run batch_extract_tbc.py --skip-discover
 afterwards to extract.
 
@@ -9,7 +9,8 @@ URL patterns:
   Consolidated:   {class}-{role}-{phase-slug}-best-in-slot-gear-burning-crusade[-classic-wow]
   Hunter BM:      beast-mastery-hunter-dps-{phase-slug}-...
 
-Phases 0/1 use the -classic-wow suffix; phases 2/3 do not.
+Phases 0/1 use the -classic-wow suffix; phases 2-5 do not.
+URL_OVERRIDES covers guides Wowhead has since merged or renamed.
 """
 from pathlib import Path
 
@@ -48,9 +49,21 @@ SPECS = [
 ]
 
 PHASES = {
+    0: ("pre-raid", "-classic-wow"),
     1: ("karazhan", "-classic-wow"),
     2: ("tk-ssc-phase-2", ""),
     3: ("bt-hyjal-phase-3", ""),
+    4: ("za-phase-4", ""),
+    5: ("swp-phase-5", ""),
+}
+
+# (phase, player_class, player_spec) -> URL, where the pattern above no longer
+# resolves to a guide.
+URL_OVERRIDES = {
+    # The Fury pre-raid page now redirects to the class hub; Arms and Fury share
+    # one pre-raid guide (dual-wield + two-hand weapon tables).
+    (0, "Warrior", "Fury"):
+        f"{BASE}/warrior-dps-pre-raid-best-in-slot-gear-burning-crusade-classic-wow",
 }
 
 out_dir = Path(__file__).parent / "out"
@@ -59,7 +72,10 @@ out_dir.mkdir(exist_ok=True)
 for phase, (slug, suffix) in PHASES.items():
     lines = []
     for cls, spec, role, pcls, pspec, prefix in SPECS:
-        url = f"{BASE}/{prefix}-{slug}-best-in-slot-gear-burning-crusade{suffix}"
+        url = URL_OVERRIDES.get(
+            (phase, pcls, pspec),
+            f"{BASE}/{prefix}-{slug}-best-in-slot-gear-burning-crusade{suffix}",
+        )
         lines.append(f"{cls}\t{spec}\t{role}\t{pcls}\t{pspec}\t{url}")
     cache_path = out_dir / f"tbc_pve_p{phase}_urls.txt"
     cache_path.write_text("\n".join(lines), encoding="utf-8")

@@ -22,7 +22,6 @@ import importlib.util
 import sys
 import time
 import urllib.error
-import urllib.request
 import re
 from pathlib import Path
 
@@ -92,28 +91,27 @@ PHASE_URL_EXTRA_SUFFIXES: dict[int, list[str]] = {
 }
 
 
-def fetch_html(url: str) -> str:
-    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-    with urllib.request.urlopen(req, timeout=30) as r:
-        return r.read().decode("utf-8", "ignore")
+def load_tbc_module(script_dir: Path):
+    mod_path = script_dir / "extract_tbc_bis.py"
+    spec = importlib.util.spec_from_file_location("extract_tbc_bis", mod_path)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules["extract_tbc_bis"] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+# Page fetching (with 403 backoff) and markup decoding are shared with the
+# single-page extractor, so discovery and extraction throttle the same way.
+etb = load_tbc_module(Path(__file__).parent)
+fetch_html = etb.fetch_html
+RateLimited = etb.RateLimited
 
 
 def extract_markup_text(page_html: str) -> str:
-    calls = re.findall(
-        r"WH\.markup\.printHtml\((.*?)(?:\);\s*$|\Z)", page_html, re.S | re.M
-    )
-    for raw in reversed(calls):
-        raw = raw.strip()
-        m = re.search(r'^"((?:\\.|[^"\\])+)', raw, re.S)
-        if not m:
-            continue
-        escaped = m.group(1)
-        text = escaped.replace("\\r\\n", "\n").replace("\\r", "\n").replace("\\n", "\n")
-        text = re.sub(r"\\u([0-9a-fA-F]{4})", lambda x: chr(int(x.group(1), 16)), text)
-        text = text.replace('\\"', '"').replace("\\/", "/")
-        if len(text) > 500:
-            return text
-    return ""
+    try:
+        return etb.extract_markup_text(page_html)
+    except ValueError:
+        return ""
 
 
 def is_tbc_guide(markup_text: str) -> bool:
@@ -133,12 +131,12 @@ def extract_cta_button_url(markup_text: str, phase: int) -> str | None:
 
 
 def probe_tbc_url(url: str) -> bool:
-    """Return True if the page has TBC guide item content."""
+    """Return True if the page has TBC guide item content.
+
+    A missing page is False; being rate-limited raises RateLimited instead, so a
+    throttled probe can't silently drop a spec from the URL cache."""
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=20) as r:
-            html = r.read().decode("utf-8", "ignore")
-        markup = extract_markup_text(html)
+        markup = extract_markup_text(fetch_html(url))
         # TBC guides have [item=] tags and [h3 toc=] slot headings
         return bool(re.search(r"\[item=\d+\]", markup) and re.search(r'\[h3 [^\]]*toc="', markup))
     except (urllib.error.HTTPError, urllib.error.URLError, OSError):
@@ -196,7 +194,7 @@ def discover_phase_url(
                 )
                 if probe_tbc_url(candidate):
                     return candidate
-                time.sleep(0.15)
+                time.sleep(1.0)
 
     # Strategy 3: consolidated index page without spec subfolder.
     # Used for healer/tank specs where Wowhead merged all specs into one guide
@@ -219,14 +217,6 @@ def discover_phase_url(
     return None
 
 
-def load_tbc_module(script_dir: Path):
-    mod_path = script_dir / "extract_tbc_bis.py"
-    spec = importlib.util.spec_from_file_location("extract_tbc_bis", mod_path)
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules["extract_tbc_bis"] = mod
-    spec.loader.exec_module(mod)
-    return mod
-
 
 _STRIP_PREFIXES = (
     "-- Auto-generated",
@@ -246,6 +236,20 @@ def strip_per_spec_header(sql: str) -> str:
     while lines and not lines[0].strip():
         lines.pop(0)
     return "\n".join(lines)
+
+
+# Slots every TBC template should fill (inv_slot -> name), for the MISSING report.
+_EXPECTED_SLOTS = {
+    1: "head", 2: "neck", 3: "shoulder", 5: "chest", 6: "waist", 7: "legs",
+    8: "feet", 9: "wrist", 10: "hands", 11: "ring1", 12: "ring2",
+    13: "trinket1", 14: "trinket2", 15: "back", 16: "main hand", 17: "off hand",
+    18: "ranged/relic",
+}
+
+
+def _is_two_hand(item_id: int) -> bool:
+    info = etb.item_info.get(item_id)
+    return bool(info and info.is_two_hand)
 
 
 def role_suffix(role: str, phase: int, player_spec: str) -> str:
@@ -308,12 +312,17 @@ def main() -> None:
         }.get(args.phase, f"Phase {args.phase}")
         print(f"Discovering TBC BiS URLs ({phase_label}) ...")
         for cls, spec, role, pcls, pspec in TBC_SPECS:
-            url = discover_phase_url(cls, spec, role, args.phase)
+            try:
+                url = discover_phase_url(cls, spec, role, args.phase)
+            except RateLimited as exc:
+                print(f"\nRate-limited by Wowhead during discovery ({exc}).")
+                print("Nothing written; wait a few minutes and re-run, or use build_url_caches.py.")
+                sys.exit(2)
             status = "OK" if url else "--"
             print(f"  {status}  {pcls}/{pspec} ({role})")
             if url:
                 entries.append((cls, spec, role, pcls, pspec, url))
-            time.sleep(0.3)
+            time.sleep(1.0)
 
         url_path.write_text(
             "\n".join(f"{c}\t{s}\t{r}\t{pc}\t{ps}\t{u}" for c, s, r, pc, ps, u in entries),
@@ -326,7 +335,7 @@ def main() -> None:
         sys.exit(1)
 
     print(f"\nExtracting {len(entries)} specs ...")
-    mod = load_tbc_module(script_dir)
+    mod = etb
 
     header_lines = [
         "-- Batch-generated TBC BiS gear templates",
@@ -349,7 +358,17 @@ def main() -> None:
         try:
             page_html = mod.fetch_html(url)
             markup = mod.extract_markup_text(page_html)
-            slot_items = mod.extract_bis_by_slot(markup)
+            warnings: list[str] = []
+            slot_items = mod.extract_bis_by_slot(markup, pcls, pspec, warnings)
+            for w in warnings:
+                print(f"       WARN {w}")
+            missing = [
+                name for slot, name in _EXPECTED_SLOTS.items()
+                if slot not in slot_items
+                and not (slot == 17 and 16 in slot_items and _is_two_hand(slot_items[16]))
+            ]
+            if missing:
+                print(f"       MISSING {', '.join(missing)}")
             if not slot_items:
                 raise ValueError("No BiS items extracted — guide may have unexpected structure.")
             sql = mod.render_sql(
@@ -369,7 +388,7 @@ def main() -> None:
             blocks.append(f"-- ERROR: {pcls}/{pspec}: {exc}")
             blocks.append("")
             errors.append(f"{pcls}/{pspec}: {exc}")
-        time.sleep(0.2)
+        time.sleep(1.0)
 
     # Prepend an idempotency DELETE block (before the SET constants) so re-applying
     # this file cannot duplicate rows. Derived from the emitted INSERTs.

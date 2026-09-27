@@ -3,7 +3,19 @@
 Extract one Wowhead TBC BiS guide page (tbc.wowhead.com) into mod-npc-talent-template SQL rows.
 
 TBC guides use Wowhead markup with [h3 toc="SlotName"] + [table] structure rather than
-gear-planner hashes. Enchants and gems default to 0 (no hash to decode them from).
+gear-planner hashes. Enchants and gems come from era_enchants.py (per class/spec).
+
+Slot resolution:
+  - Armor / jewelry sections map by heading (TOC_TO_INV_SLOTS). Each row's item is
+    checked against item_template (item_info.py): items missing from the 3.3.5a
+    client or with the wrong InventoryType for the slot are skipped.
+  - Weapon, off-hand, shield and ranged/relic sections are pooled and resolved by
+    the items' InventoryType, not by heading: a "Weapons" table ranking a PvP gavel
+    second can no longer push the shield out of the off-hand, 2H weapons clear the
+    off-hand, and one-handers only go to the off-hand for dual-wield specs.
+  - Rows labelled BiS/Best rank first, then other rows in page order; rows
+    labelled PvP rank last. Two-slot sections (rings, trinkets) take the two
+    best distinct items.
 
 Usage (PowerShell from wow-bis-sql-tool/):
   python extract_tbc_bis.py \\
@@ -21,33 +33,41 @@ import argparse
 import importlib.util
 import re
 import sys
+import time
+import urllib.error
 import urllib.request
 from pathlib import Path
+from typing import NamedTuple
 
-# Shared era-appropriate enchant map (level-70 TBC). Path-loaded so it works
-# whether this module is run directly or imported via importlib by the batch tool.
-_ee_spec = importlib.util.spec_from_file_location(
-    "era_enchants", Path(__file__).parent / "era_enchants.py"
-)
-era_enchants = importlib.util.module_from_spec(_ee_spec)
-sys.modules.setdefault("era_enchants", era_enchants)
-_ee_spec.loader.exec_module(era_enchants)
 
-# Level-70 TBC-era enchants now live in era_enchants.py (per class/spec, every
-# enchantable slot, SpellItemEnchantment ids verified against 3.3.5a).
-# Gear sockets (socket1/2/3) stay 0 — gems are per-item, not derivable per spec.
+def _load_sibling(name: str):
+    """Path-load a sibling module so this works whether run directly or imported
+    via importlib by the batch tool."""
+    spec = importlib.util.spec_from_file_location(name, Path(__file__).parent / f"{name}.py")
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules.setdefault(name, mod)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+# Level-70 TBC-era enchants + colour-matched gems (per class/spec, SpellItemEnchantment
+# ids verified against 3.3.5a) and item_template metadata.
+era_enchants = _load_sibling("era_enchants")
+item_info = _load_sibling("item_info")
 
 # ---------------------------------------------------------------------------
 
-# Wowhead markup h3 toc heading → list of inv_slot numbers.
+# Wowhead markup h3 toc heading → list of inv_slot numbers, for armor/jewelry.
 # For multi-slot sections (Rings, Trinkets) the list has 2 entries; the
-# extractor assigns the 1st BiS item to slots[0], 2nd BiS item to slots[1].
+# extractor assigns the 1st ranked item to slots[0], 2nd to slots[1].
+# Weapon / off-hand / ranged headings are classified by _hand_section_kind().
 TOC_TO_INV_SLOTS: dict[str, list[int]] = {
     "Head": [1],
     "Neck": [2],
     "Shoulder": [3],
     "Shoulders": [3],
     "Back": [15],
+    "Cloak": [15],
     "Chest": [5],
     "Wrist": [9],
     "Wrists": [9],
@@ -55,86 +75,46 @@ TOC_TO_INV_SLOTS: dict[str, list[int]] = {
     "Hands": [10],
     "Gloves": [10],
     "Waist": [6],
+    "Belt": [6],
     "Legs": [7],
     "Feet": [8],
+    "Boots": [8],
     "Ring": [11, 12],
     "Rings": [11, 12],
     "Finger": [11, 12],
     "Fingers": [11, 12],
     "Trinket": [13, 14],
     "Trinkets": [13, 14],
-    "Main Hand": [16],
-    "Mainhand": [16],
-    "Main Hand Weapon": [16],
-    "Main Hand Weapons": [16],
-    "Main-Hand Weapon": [16],
-    "Main-Hand Weapons": [16],
-    "Mainhand Weapons": [16],
-    "Off Hand": [17],
-    "Offhand": [17],
-    "Off Hand Weapon": [17],
-    "Off Hand Weapons": [17],
-    "Off-Hand Weapon": [17],
-    "Off-Hand Weapons": [17],
-    "Shield": [17],
-    # Weapons with only one item → main hand; with two → main + off
-    "Weapon": [16, 17],
-    "Weapons": [16, 17],
-    "1H Weapon": [16],
-    "1H Weapons": [16],
-    "One Hand Weapons": [16],
-    "One-Hand Weapons": [16],
-    "One Handed Weapons": [16],
-    "One-Handed Weapons": [16],
-    "2H Weapon": [16],
-    "2H Weapons": [16],
-    "Two Hand Weapons": [16],
-    "Two-Hand Weapons": [16],
-    "Two Handed Weapons": [16],
-    "Two-Handed Weapons": [16],
-    "Staff": [16],
-    "Staves": [16],
-    "Polearm": [16],
-    "Polearms": [16],
-    "Offhands": [17],
-    "Shield": [17],
-    "Shields": [17],
-    # Relics (class-specific ranged slot)
-    "Idol": [18],
-    "Idols": [18],
-    "Totem": [18],
-    "Totems": [18],
-    "Libram": [18],
-    "Librams": [18],
-    "Relic": [18],
-    "Relics": [18],
-    "Ranged": [18],
-    "Ranged Weapon": [18],
-    "Ranged Weapons": [18],
-    "Wand": [18],
-    "Wands": [18],
-    "Thrown": [18],
-    "Thrown Weapon": [18],
-    "Thrown Weapons": [18],
-    "Bow": [18],
-    "Bows": [18],
-    "Gun": [18],
-    "Guns": [18],
-    "Crossbow": [18],
-    "Crossbows": [18],
+}
+_ARMOR_HEADINGS = {k.lower(): v for k, v in TOC_TO_INV_SLOTS.items()}
+
+MAIN_HAND, OFF_HAND, RANGED = 16, 17, 18
+
+# Heading keyword → section kind for the hand pool. Checked in order, so
+# "Ranged Weapons" is ranged (not melee) and "Off Hands and Shields" is off-hand.
+_RANGED_WORDS = re.compile(r"ranged|wand|thrown|\bbows?\b|\bguns?\b|crossbow|idol|totem|libram|relic")
+_OFF_WORDS = re.compile(r"off[\s-]?hand|shield")
+_MAIN_WORDS = re.compile(r"main[\s-]?hand")
+_WEAPON_WORDS = re.compile(
+    r"weapon|melee|staff|staves|polearm|two[\s-]?hand|one[\s-]?hand|\b[12]h\b|dagger|sword|mace|axe|fist"
+)
+
+# Dual-wield / two-hand preference per spec. Hunters may use either (guide order).
+_DUAL_WIELD_CLASSES = {"Rogue", "Hunter"}
+_DUAL_WIELD_SPECS = {("Warrior", "Fury"), ("Shaman", "Enhancement")}
+_PREFER_TWO_HAND = {
+    ("Warrior", "Arms"), ("Warrior", "ArmsAxe"), ("Warrior", "ArmsSword"),
+    ("Paladin", "Retribution"), ("Druid", "Cat"), ("Druid", "Bear"),
 }
 
-# Headings whose main-hand pick is a two-handed weapon: it occupies both hands,
-# so any off-hand the guide also lists (some pages carry a dual-wield alternative
-# section too) must not be applied on top of it.
-_TWO_HANDED_TOC = {
-    k.lower() for k in (
-        "2H Weapon", "2H Weapons",
-        "Two Hand Weapons", "Two-Hand Weapons",
-        "Two Handed Weapons", "Two-Handed Weapons",
-        "Staff", "Staves", "Polearm", "Polearms",
-    )
-}
+_OFF_HAND_TYPES = {item_info.INV_OFF_HAND, item_info.INV_SHIELD, item_info.INV_HOLDABLE}
+# Weapons that come as a main-hand/off-hand set. Guides rank the set once as
+# "Best Pair" and only link the main-hand item.
+_PAIRED_OFF_HAND = {32837: 32838}  # Warglaive of Azzinoth (MH) -> (OH)
+_PAIR_LABEL = re.compile(r"\bpair\b", re.I)
+
+_OFF_LABEL = re.compile(r"off[\s-]?hand|\boh\b", re.I)
+_MAIN_LABEL = re.compile(r"main[\s-]?hand|\bmh\b", re.I)
 
 # inv_slot (1-based WoW gear slot) → pos (0-based column in mod_npc_talent_template_gear)
 INV_SLOT_TO_POS: dict[int, int] = {
@@ -192,10 +172,31 @@ SPEC_ICONS: dict[tuple[str, str], str] = {
 }
 
 
-def fetch_html(url: str) -> str:
+class RateLimited(RuntimeError):
+    """Wowhead kept refusing requests (403/429/503) after all retries."""
+
+
+_RETRY_STATUSES = {403, 429, 503}
+
+
+def fetch_html(url: str, retries: int = 5, backoff: float = 20.0) -> str:
+    """GET a page. Wowhead answers request bursts with 403, so those (and 429/503)
+    are retried with a growing pause before giving up with RateLimited — callers
+    must not mistake a throttled request for a missing guide."""
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-    with urllib.request.urlopen(req, timeout=45) as resp:
-        return resp.read().decode("utf-8", "ignore")
+    for attempt in range(retries + 1):
+        try:
+            with urllib.request.urlopen(req, timeout=45) as resp:
+                return resp.read().decode("utf-8", "ignore")
+        except urllib.error.HTTPError as exc:
+            if exc.code not in _RETRY_STATUSES:
+                raise
+            if attempt == retries:
+                raise RateLimited(f"HTTP {exc.code} after {retries} retries: {url}") from exc
+            wait = backoff * (attempt + 1)
+            print(f"       (HTTP {exc.code}, retrying in {wait:.0f}s)", file=sys.stderr)
+            time.sleep(wait)
+    raise AssertionError("unreachable")
 
 
 def extract_markup_text(page_html: str) -> str:
@@ -224,69 +225,166 @@ def extract_markup_text(page_html: str) -> str:
     raise ValueError("Could not extract guide markup text.")
 
 
-def extract_bis_by_slot(markup_text: str) -> dict[int, int]:
+class _Row(NamedTuple):
+    item: int
+    label: str
+    tier: int   # 0 = BiS/Best, 1 = other, 2 = PvP
+    order: int  # document order across the whole page
+    kind: str   # hand pool only: "main" | "off" | "any" | "ranged"
+
+
+def _rank_tier(label: str) -> int:
+    if re.search(r"pvp", label, re.I):
+        return 2
+    if re.match(r"^(BiS|Best)", label, re.I):
+        return 0
+    return 1
+
+
+def _section_rows(content: str, order_start: int) -> list[tuple[int, str, int]]:
+    """(item, rank label, order) for every item row of every table in a section."""
+    out: list[tuple[int, str, int]] = []
+    order = order_start
+    for table_content in re.findall(r"\[table[^\]]*\](.*?)\[/table\]", content, re.S):
+        # Tolerate a malformed row-closing tag ("[/tr}" appears in some guides).
+        for row in re.findall(r"\[tr\](.*?)\[/tr[\]\}]", table_content, re.S):
+            tds = re.findall(r"\[td[^\]]*\](.*?)\[/td\]", row, re.S)
+            if len(tds) < 2:
+                continue
+            m = re.search(r"\[item=(\d+)", tds[1])
+            if not m:
+                continue  # header/label row (no item link)
+            label = re.sub(r"\[[^\]]+\]", "", tds[0]).strip()
+            out.append((int(m.group(1)), label, order))
+            order += 1
+    return out
+
+
+def _hand_section_kind(heading: str) -> str | None:
+    h = heading.lower()
+    if _RANGED_WORDS.search(h):
+        return "ranged"
+    if _OFF_WORDS.search(h):
+        return "off"
+    if _MAIN_WORDS.search(h):
+        return "main"
+    if _WEAPON_WORDS.search(h):
+        return "any"
+    return None
+
+
+def _ranked(rows: list[_Row]) -> list[_Row]:
+    return sorted(rows, key=lambda r: (r.tier, r.order))
+
+
+def _resolve_hands(
+    pool: list[_Row], player_class: str | None, player_spec: str | None, result: dict[int, int]
+) -> None:
+    """Fill main hand, off hand and ranged/relic from the pooled weapon rows by
+    InventoryType (see module docstring)."""
+    key = (player_class, player_spec)
+    dual_wield = player_class in _DUAL_WIELD_CLASSES or key in _DUAL_WIELD_SPECS
+    prefer_2h = key in _PREFER_TWO_HAND
+
+    def inv(r: _Row) -> int:
+        return item_info.get(r.item).inventory_type
+
+    # Main hand: a main-hand-capable item from a main/any section. Rows labelled
+    # "Off Hand" in a mixed table only count once nothing else is left.
+    mh_rows = [r for r in pool if r.kind in ("main", "any") and inv(r) in item_info.MAIN_HAND_TYPES]
+    if prefer_2h and any(inv(r) == item_info.INV_TWO_HAND for r in mh_rows):
+        mh_rows = [r for r in mh_rows if inv(r) == item_info.INV_TWO_HAND]
+    elif (dual_wield and player_class != "Hunter"
+          and any(inv(r) != item_info.INV_TWO_HAND for r in mh_rows)):
+        mh_rows = [r for r in mh_rows if inv(r) != item_info.INV_TWO_HAND]
+    mh_rows.sort(key=lambda r: (bool(_OFF_LABEL.search(r.label)), r.tier, r.order))
+    mh = mh_rows[0] if mh_rows else None
+    if mh:
+        result[MAIN_HAND] = mh.item
+
+    # Off hand: nothing next to a two-hander. Dedicated off-hand/shield sections
+    # win over a second pick from a combined "Weapons" table.
+    if (mh and dual_wield and mh.item in _PAIRED_OFF_HAND and _PAIR_LABEL.search(mh.label)
+            and item_info.get(_PAIRED_OFF_HAND[mh.item])):
+        result[OFF_HAND] = _PAIRED_OFF_HAND[mh.item]
+    elif not (mh and inv(mh) == item_info.INV_TWO_HAND):
+        def oh_ok(r: _Row) -> bool:
+            if mh and r.item == mh.item:
+                return False
+            t = inv(r)
+            return t in _OFF_HAND_TYPES or (dual_wield and t == item_info.INV_ONE_HAND)
+
+        oh_rows = _ranked([r for r in pool if r.kind == "off" and oh_ok(r)])
+        if not oh_rows:
+            oh_rows = [r for r in pool if r.kind in ("main", "any") and oh_ok(r)]
+            oh_rows.sort(key=lambda r: (bool(_MAIN_LABEL.search(r.label)), r.tier, r.order))
+        if oh_rows:
+            result[OFF_HAND] = oh_rows[0].item
+
+    # Ranged / relic: a ranged section first, else a bow/gun/wand/relic that a
+    # guide folded into its combined "Weapons" table (pre-raid hunter guides).
+    rng = [r for r in pool if inv(r) in item_info.RANGED_TYPES]
+    rng.sort(key=lambda r: (r.kind != "ranged", r.tier, r.order))
+    if rng:
+        result[RANGED] = rng[0].item
+
+
+def extract_bis_by_slot(
+    markup_text: str,
+    player_class: str | None = None,
+    player_spec: str | None = None,
+    warnings: list[str] | None = None,
+) -> dict[int, int]:
     """
     Parse [h3 toc="SlotName"] + [table] markup.
 
-    Returns {inv_slot: item_id} with the best BiS item per slot.
-    For Rings and Trinkets the first two BiS items fill the two slot entries.
+    Returns {inv_slot: item_id} with the best item per slot. player_class /
+    player_spec steer the hand resolution (dual wield, two-hand preference);
+    skipped items are described in `warnings` when a list is passed.
     """
+    warn = warnings.append if warnings is not None else (lambda _msg: None)
     parts = re.split(r'\[h3 [^\]]*toc="([^"]+)"[^\]]*\]', markup_text)
     result: dict[int, int] = {}
-    filled_by: dict[int, str] = {}  # slot -> heading that filled it (for the 2H rule)
+    hand_pool: list[_Row] = []
+    unknown: set[int] = set()
+    order = 0
 
     for i in range(1, len(parts) - 1, 2):
-        heading = parts[i].strip()  # strip leading/trailing whitespace
-        content = parts[i + 1]
-
-        slots = None
-        for key, val in TOC_TO_INV_SLOTS.items():
-            if key.lower() == heading.lower():
-                slots = val
-                break
-        if slots is None:
+        heading = parts[i].strip()
+        armor_slots = _ARMOR_HEADINGS.get(heading.lower())
+        hand_kind = None if armor_slots else _hand_section_kind(heading)
+        if armor_slots is None and hand_kind is None:
             continue
 
-        tables = re.findall(r"\[table[^\]]*\](.*?)\[/table\]", content, re.S)
-        bis_items: list[int] = []
-        first_items: list[int] = []  # fallback: first data-row item per table
-        for table_content in tables:
-            # Tolerate a malformed row-closing tag ("[/tr}" appears in some guides).
-            rows = re.findall(r"\[tr\](.*?)\[/tr[\]\}]", table_content, re.S)
-            table_first: int | None = None
-            for row in rows:
-                tds = re.findall(r"\[td[^\]]*\](.*?)\[/td\]", row, re.S)
-                if len(tds) < 2:
-                    continue
-                m = re.search(r"\[item=(\d+)", tds[1])
-                if not m:
-                    continue  # header/label row (no item link)
-                item = int(m.group(1))
-                if table_first is None:
-                    table_first = item
-                rank_text = re.sub(r"\[[^\]]+\]", "", tds[0]).strip()
-                if re.match(r"^(BiS|Best)", rank_text, re.I):
-                    bis_items.append(item)
-            if table_first is not None:
-                first_items.append(table_first)
+        rows: list[_Row] = []
+        for item, label, o in _section_rows(parts[i + 1], order):
+            if item_info.get(item) is None:
+                unknown.add(item)
+                continue
+            rows.append(_Row(item, label, _rank_tier(label), o, hand_kind or ""))
+        order += 1000  # keep sections apart in document order
 
-        # Some guides (esp. tank/healer trinket & weapon tables) rank rows by stat
-        # ("51 Stam + Proc", …) with no BiS/Best label. If nothing was labelled,
-        # fall back to the first data row of each table (guides list the top pick first).
-        picks = bis_items if bis_items else first_items
+        if hand_kind:
+            hand_pool.extend(rows)
+            continue
 
-        for j, slot in enumerate(slots):
+        picks: list[int] = []
+        for r in _ranked(rows):
+            if r.item in picks:
+                continue
+            info = item_info.get(r.item)
+            if not item_info.fits_slot(info, armor_slots[0]):
+                warn(f"[{heading}] {r.item} ({info.name}) doesn't fit the slot, skipped")
+                continue
+            picks.append(r.item)
+        for j, slot in enumerate(armor_slots):
             if j < len(picks) and slot not in result:
                 result[slot] = picks[j]
-                filled_by[slot] = heading
 
-    # A two-handed main-hand occupies both hands: drop any off-hand that a
-    # secondary section may have added (e.g. an Arms guide that also lists a
-    # dual-wield alternative under "Off Hand Weapons").
-    if filled_by.get(16, "").lower() in _TWO_HANDED_TOC and 17 in result:
-        del result[17]
-        filled_by.pop(17, None)
+    _resolve_hands(hand_pool, player_class, player_spec, result)
 
+    for item in sorted(unknown):
+        warn(f"item {item} is not in the 3.3.5a item_template, skipped")
     return result
 
 
@@ -356,6 +454,9 @@ def render_sql(
         pos = INV_SLOT_TO_POS[inv_slot]
         item_id = slot_items[inv_slot]
         enchant = enchants.get(pos, 0)
+        info = item_info.get(item_id)
+        if info and info.inventory_type == item_info.INV_HOLDABLE:
+            enchant = 0  # held-in-off-hand items can't be enchanted
         # Colour-matched TBC gems for the item's sockets (see era_enchants.py).
         s1, s2, s3 = era_enchants.gems_for(70, player_class, player_spec, item_id)
         gear_rows.append(
@@ -416,7 +517,10 @@ def main() -> None:
 
     page_html = fetch_html(args.url)
     markup = extract_markup_text(page_html)
-    slot_items = extract_bis_by_slot(markup)
+    warnings: list[str] = []
+    slot_items = extract_bis_by_slot(markup, args.player_class, args.player_spec, warnings)
+    for w in warnings:
+        print(f"  WARN {w}")
 
     print(f"Extracted {len(slot_items)} gear slots:")
     for inv_slot, item_id in sorted(slot_items.items()):

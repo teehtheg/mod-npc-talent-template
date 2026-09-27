@@ -98,8 +98,28 @@ _SOCKET_COLORS: dict[str, list[int]] = json.loads(
 
 
 def socket_colors_for(item_entry: int) -> list[int]:
-    """Socket colours (1/2/4/8) of a TBC item, or [] if it has no sockets."""
-    return _SOCKET_COLORS.get(str(item_entry), [])
+    """Socket colours (1/2/4/8) of a TBC item, or [] if it has no sockets.
+
+    The bundled JSON covers the P0-P3 items; anything else (e.g. ZA/Sunwell gear)
+    is looked up in item_template via item_info."""
+    colors = _SOCKET_COLORS.get(str(item_entry))
+    if colors is not None:
+        return colors
+    info = _item_info().get(item_entry)
+    return list(info.socket_colors) if info else []
+
+
+def _item_info():
+    """Lazy-load item_info (it parses item_template on first use)."""
+    import importlib.util
+    import sys
+    mod = sys.modules.get("item_info")
+    if mod is None:
+        spec = importlib.util.spec_from_file_location("item_info", Path(__file__).parent / "item_info.py")
+        mod = importlib.util.module_from_spec(spec)
+        sys.modules["item_info"] = mod
+        spec.loader.exec_module(mod)
+    return mod
 
 
 def gems_for(level: int, player_class: str, player_spec: str, item_entry: int):

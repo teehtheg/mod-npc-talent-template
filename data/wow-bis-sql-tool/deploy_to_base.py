@@ -11,7 +11,7 @@ a numeric prefix:
     10_/11_ npc_talent_template_data_*         S6/T6 sets    (hand-maintained)
     20_  classic talents
     21_-24_  classic BiS (p2, p4, p5, p6)
-    30_-33_  tbc BiS (p0-p3)
+    30_-35_  tbc BiS (p0-p5)
     40_-43_  wotlk BiS (p1-p4)
 
 Only the generated files below are copied; the hand-maintained 00_/01_/10_/11_
@@ -41,6 +41,8 @@ MAPPING = {
     "tbc_pve_p1_bis.sql":      "31_tbc_pve_p1_bis.sql",
     "tbc_pve_p2_bis.sql":      "32_tbc_pve_p2_bis.sql",
     "tbc_pve_p3_bis.sql":      "33_tbc_pve_p3_bis.sql",
+    "tbc_pve_p4_bis.sql":      "34_tbc_pve_p4_bis.sql",
+    "tbc_pve_p5_bis.sql":      "35_tbc_pve_p5_bis.sql",
     "wotlk_pve_p1_bis.sql":    "40_wotlk_pve_p1_bis.sql",
     "wotlk_pve_p2_bis.sql":    "41_wotlk_pve_p2_bis.sql",
     "wotlk_pve_p3_bis.sql":    "42_wotlk_pve_p3_bis.sql",

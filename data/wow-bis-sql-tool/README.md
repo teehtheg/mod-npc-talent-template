@@ -27,7 +27,7 @@ python .\deploy_to_base.py --dry-run  # preview only
 | `00_` `01_` | schema + `category` migration | hand-maintained |
 | `10_` `11_` | S6 / T6 base sets | hand-maintained |
 | `20_`–`24_` | classic talents + BiS | generated |
-| `30_`–`33_` | tbc BiS | generated |
+| `30_`–`35_` | tbc BiS (P0–P5) | generated |
 | `40_`–`43_` | wotlk BiS | generated |
 | `44_` | wotlk PvE talents (`extract_wotlk_talents.py`) | generated |
 
@@ -150,14 +150,29 @@ python .\batch_extract_tbc.py --phase 3 --skip-discover
 
 ### Coverage
 
-Not all TBC specs have BiS guides on Wowhead. Discovery uses two strategies:
-1. For specs whose `/tbc/guide/classes/` index page still shows TBC content: extracts the
-   phase-specific URL from the embedded `[cta-button=...]` links.
-2. For other specs: probes `tbc.wowhead.com/guides/{spec}-{class}-{role}-{phase-slug}-...`
+All 27 TBC specs have guides on `tbc.wowhead.com` for every phase 0–5. Discovery tries:
+1. The spec's `/tbc/guide/classes/` index page, extracting the phase URL from its
+   `[cta-button=...]` links (only while the page still shows TBC content).
+2. A direct probe of `tbc.wowhead.com/guides/{spec}-{class}-{role}-{phase-slug}-...`.
+3. The consolidated class/role index page (healers, Prot Paladin, Rogues).
 
-Confirmed available for phase 3: Mage (×3), Warrior (×3), Druid (Cat/Bear/Balance),
-Shaman (Ele/Enh), Paladin (Holy/Ret), Shadow Priest.  
-Not available: Hunters, Rogues, Warlocks, Druid/Shaman/Paladin/Priest healers/tanks.
+Wowhead throttles bursts with HTTP 403. Requests back off and retry; if it keeps
+refusing, discovery **stops** (exit code 2) instead of recording the spec as missing.
+
+**Offline URL caches (recommended):** `build_url_caches.py` writes
+`out/tbc_pve_p{0..5}_urls.txt` from the known URL patterns without any requests —
+including `URL_OVERRIDES` for guides Wowhead has merged (Fury P0 now shares the
+combined Arms/Fury pre-raid page). Then extract each phase with `--skip-discover`:
+
+```powershell
+python .\build_url_caches.py
+foreach ($p in 0..5) { python .\batch_extract_tbc.py --phase $p --skip-discover }
+python .\deploy_to_base.py
+```
+
+The batch run prints a `WARN` line per skipped item (not in the 3.3.5a
+`item_template`, or wrong slot type) and a `MISSING` line per spec with empty slots —
+review those before deploying.
 
 ### Output spec naming
 
@@ -325,27 +340,32 @@ and `0` left untouched), reusing the generator's seed map as the single source o
   each socket (colours in `tbc_socket_colors.json`, exported from item_template) so
   socket bonuses fire. The TBC generator fills sockets; repair existing output with
   **`apply_tbc_gems_inplace.py`** (rewrites only socket1/2/3).
-- Ranged/relic slot (pos 17): some guides head that section "Ranged Weapons" /
-  "Wands" / "Thrown", which the slot map now covers, so hunters get their bow/gun
-  (+ scope), casters their wand, rogues their thrown weapon, etc. Repair existing
-  output with **`add_missing_ranged_inplace.py`** (re-fetches each spec missing a
-  pos-17 row and inserts just that row). It falls back through three strategies:
-  the BiS-labeled ranged table, then any item under a ranged-type heading, then —
-  for pre-raid/Kara hunter guides that fold the ranged weapon into a combined
-  "Weapons" section — the first Bow/Gun/Crossbow item there (looked up by subclass).
-
-- Row-label fallback: `extract_bis_by_slot` picks the row whose first cell starts
-  with `BiS`/`Best`; if a slot's table has no such row (some tank/healer trinket &
-  weapon tables rank by stat, e.g. "51 Stam + Proc"), it falls back to the table's
-  first data row. Repair existing output missing trinkets with
-  **`add_missing_trinkets_inplace.py`** (inserts pos 12/13 rows; keyed by class+spec
-  since Protection/Holy are shared across classes).
+- `add_missing_ranged_inplace.py` / `add_missing_trinkets_inplace.py` were one-off
+  repairs for output generated before the extractor handled ranged sections and
+  unlabelled trinket tables. The extractor now covers both (see TBC below), so a
+  regenerate makes them unnecessary.
 
 ### TBC
 - No gear-planner hash — uses `[h3 toc="SlotName"]` + `[table]` markup from `tbc.wowhead.com`.
-- Extracts the first row labeled "BiS*" per slot table as the BiS item.
-- Rings and Trinkets: two tables per section → fills both slot entries.
-- Enchants and gems default to `0` (not available from guide text).
+- Row ranking per section: rows labelled `BiS`/`Best…` first, then the other rows in
+  page order, rows labelled `PvP` last. Rings and trinkets take the two best distinct
+  items, so a section with a single "BiS" row still fills both slots.
+- Every item is checked against `item_template` (`item_info.py`, which parses the core
+  repo's `data/sql/base/db_world/item_template.sql` once and caches
+  `out/item_info_cache.json`). Items missing from the 3.3.5a client (e.g. TBC
+  Anniversary ids > 200000) or with the wrong InventoryType for the slot are skipped.
+- Weapons are resolved by **item type**, not by heading: every weapon / off-hand /
+  shield / ranged / relic section goes into one pool ("Off-Hands", "Shields &
+  Offhands", "Melee Weapons", … are matched by keyword). Main hand = best
+  main-hand-capable item (Arms/Ret/Feral prefer a two-hander, Fury/Enhancement/Rogues
+  a one-hander); a two-hander leaves the off-hand empty; otherwise the off-hand comes
+  from a dedicated off-hand/shield section first, then from a combined "Weapons"
+  table — one-handers only for dual-wield specs. So a "Weapons" table whose second
+  row is a PvP mace can no longer take the shield's place. Ranged/relic prefers a
+  ranged section, else a bow/gun/wand folded into "Weapons".
+- Enchants and gems come from `era_enchants.py`; held-in-off-hand items get no enchant.
+  Socket colours come from `tbc_socket_colors.json`, falling back to `item_template`
+  for items not in it (ZA/Sunwell gear).
 - Uses `@RACEMASK_ALL` (same gear for all races, unlike WotLK).
 
 ### Classic
