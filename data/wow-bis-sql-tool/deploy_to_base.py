@@ -8,13 +8,14 @@ a numeric prefix:
 
     00_npc_talent_template.sql                 schema        (hand-maintained)
     01_..._index_category.sql                  migration     (hand-maintained)
+    02_..._index_category_order.sql            migration     (hand-maintained)
     10_/11_ npc_talent_template_data_*         S6/T6 sets    (hand-maintained)
     20_  classic talents
     21_-24_  classic BiS (p2, p4, p5, p6)
     30_-35_  tbc BiS (p0-p5)
     40_-43_  wotlk BiS (p1-p4)
 
-Only the generated files below are copied; the hand-maintained 00_/01_/10_/11_
+Only the generated files below are copied; the hand-maintained 00_/01_/02_/10_/11_
 files are never touched. The DELETE idempotency block is already baked into the
 generated files by the extractors (see sql_idempotency.py), so a full
 regenerate -> deploy cycle reproduces the committed base/ files exactly.

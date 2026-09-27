@@ -265,6 +265,7 @@ def main() -> None:
                 talent_override=talent_override,
                 slot_items=slot_items,
                 category=f"Classic Phase {args.phase}",
+                category_order=100 + args.phase,  # menu order: Classic 1xx, TBC 2xx, WotLK 3xx
             )
             cleaned = strip_per_spec_header(sql)
             blocks.append(f"-- ===== {pcls} {full_spec} =====")

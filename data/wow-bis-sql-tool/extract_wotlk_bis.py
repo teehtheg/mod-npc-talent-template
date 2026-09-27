@@ -682,6 +682,7 @@ def render_sql(
     suffix: str,
     talent_override_suffix: str,
     category: str = "",
+    category_order: int = 0,
     glyph_override_suffix: str | None = None,
     talent_spec_base: str | None = None,
 ) -> str:
@@ -750,15 +751,15 @@ def render_sql(
     lines.append("/*!40000 ALTER TABLE `mod_npc_talent_template_index` DISABLE KEYS */;")
     lines.append(
         "INSERT INTO `mod_npc_talent_template_index` "
-        "(`playerClass`, `playerSpec`, `gossipAction`, `gossipText`, `mask`, `minLevel`, `maxLevel`, `glyphOverride`, `talentOverride`, `category`) VALUES"
+        "(`playerClass`, `playerSpec`, `gossipAction`, `gossipText`, `mask`, `minLevel`, `maxLevel`, `glyphOverride`, `talentOverride`, `category`, `categoryOrder`) VALUES"
     )
     lines.append(
         f"('{player_class}', '{player_spec}', @ACTION+000, "
-        f"'{gossip_text}', 7, @MINLEVEL, @MAXLEVEL, '{glyph_spec}', '{talent_spec}', '{category}'),"
+        f"'{gossip_text}', 7, @MINLEVEL, @MAXLEVEL, '{glyph_spec}', '{talent_spec}', '{category}', {category_order}),"
     )
     lines.append(
         f"('{player_class}', '{player_spec}', @ACTION+001, "
-        f"'{gossip_text} (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, '{glyph_spec}', '{talent_spec}', '{category}');"
+        f"'{gossip_text} (Talents and Glyphs only)', 6, @MINLEVEL, @MAXLEVEL, '{glyph_spec}', '{talent_spec}', '{category}', {category_order});"
     )
     lines.append("/*!40000 ALTER TABLE `mod_npc_talent_template_index` ENABLE KEYS */;")
     lines.append("")
@@ -793,6 +794,10 @@ def main() -> None:
         help="Gossip sub-menu category label (default: empty = root menu)",
     )
     parser.add_argument(
+        "--category-order", type=int, default=0,
+        help="Sort key of the category in the gossip menu (lower = higher up, default: 0)",
+    )
+    parser.add_argument(
         "--out",
         default="out/generated_spec.sql",
         help="Output SQL file path",
@@ -812,6 +817,7 @@ def main() -> None:
         suffix=args.suffix,
         talent_override_suffix=args.talent_override_suffix,
         category=args.category,
+        category_order=args.category_order,
     )
 
     out_path = Path(args.out)

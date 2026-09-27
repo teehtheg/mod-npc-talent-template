@@ -24,6 +24,7 @@ from typing import NamedTuple
 
 _HERE = Path(__file__).parent
 _CACHE = _HERE / "out" / "item_info_cache.json"
+_CACHE_VERSION = 2  # bump when the cached fields change
 
 _et_spec = importlib.util.spec_from_file_location("enchant_translate", _HERE / "enchant_translate.py")
 enchant_translate = importlib.util.module_from_spec(_et_spec)
@@ -69,10 +70,23 @@ class ItemInfo(NamedTuple):
     subclass: int
     inventory_type: int
     socket_colors: tuple[int, ...]
+    allowable_class: int  # class bitmask (1 << (classId - 1)); 0 / -1 = any class
 
     @property
     def is_two_hand(self) -> bool:
         return self.inventory_type == INV_TWO_HAND
+
+    def usable_by(self, player_class: str) -> bool:
+        """False if item_template restricts the item to other classes."""
+        bit = CLASS_MASK.get(player_class)
+        return bit is None or self.allowable_class <= 0 or bool(self.allowable_class & bit)
+
+
+# playerClass (as written in the SQL) -> item_template.AllowableClass bit
+CLASS_MASK = {
+    "Warrior": 1, "Paladin": 2, "Hunter": 4, "Rogue": 8, "Priest": 16,
+    "Death Knight": 32, "Shaman": 64, "Mage": 128, "Warlock": 256, "Druid": 1024,
+}
 
 
 _items: dict[int, ItemInfo] | None = None
@@ -90,9 +104,9 @@ def _build_cache() -> dict[str, list]:
     cols = enchant_translate._parse_create_columns(text, "item_template")
     idx = {c: cols.index(c) for c in (
         "entry", "class", "subclass", "name", "InventoryType",
-        "socketColor_1", "socketColor_2", "socketColor_3",
+        "socketColor_1", "socketColor_2", "socketColor_3", "AllowableClass",
     )}
-    data: dict[str, list] = {}
+    data: dict = {"__version__": _CACHE_VERSION}
     for t in enchant_translate._iter_value_tuples(text):
         if len(t) != len(cols):
             continue
@@ -103,6 +117,7 @@ def _build_cache() -> dict[str, list]:
             int(t[idx["subclass"]]),
             int(t[idx["InventoryType"]]),
             [c for c in sockets if c],
+            int(t[idx["AllowableClass"]]),
         ]
     _CACHE.parent.mkdir(parents=True, exist_ok=True)
     _CACHE.write_text(json.dumps(data, separators=(",", ":")), encoding="utf-8")
@@ -112,11 +127,12 @@ def _build_cache() -> dict[str, list]:
 def _load() -> dict[int, ItemInfo]:
     global _items
     if _items is None:
-        raw = (json.loads(_CACHE.read_text(encoding="utf-8"))
-               if _CACHE.exists() else _build_cache())
+        raw = json.loads(_CACHE.read_text(encoding="utf-8")) if _CACHE.exists() else {}
+        if raw.get("__version__") != _CACHE_VERSION:
+            raw = _build_cache()
         _items = {
-            int(k): ItemInfo(int(k), v[0], v[1], v[2], v[3], tuple(v[4]))
-            for k, v in raw.items()
+            int(k): ItemInfo(int(k), v[0], v[1], v[2], v[3], tuple(v[4]), v[5])
+            for k, v in raw.items() if k != "__version__"
         }
     return _items
 

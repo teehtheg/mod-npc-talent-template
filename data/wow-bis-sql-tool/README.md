@@ -13,7 +13,7 @@ Supported expansions:
 
 Generators write to `out/` with logical names. The module's SQL updater applies
 files in ascending **filename** order (compared by filename only), so the data
-files must sort *after* the schema-creation file and the `category` migration.
+files must sort *after* the schema-creation file and the `category` / `categoryOrder` migrations.
 `deploy_to_base.py` copies `out/` into `../sql/db-characters/base/` with a
 numeric-prefix scheme that enforces that order:
 
@@ -24,7 +24,7 @@ python .\deploy_to_base.py --dry-run  # preview only
 
 | Prefix | Files | Source |
 |--------|-------|--------|
-| `00_` `01_` | schema + `category` migration | hand-maintained |
+| `00_` `01_` `02_` | schema + `category` / `categoryOrder` migrations | hand-maintained |
 | `10_` `11_` | S6 / T6 base sets | hand-maintained |
 | `20_`–`24_` | classic talents + BiS | generated |
 | `30_`–`35_` | tbc BiS (P0–P5) | generated |
@@ -33,6 +33,14 @@ python .\deploy_to_base.py --dry-run  # preview only
 
 Run this **after** a fresh regenerate — a full regenerate → deploy cycle
 reproduces the committed `base/` files exactly.
+
+## Menu categories
+
+Each batch run writes its builds into one gossip sub-menu: `category` is the label
+(`Classic Phase N`, `TBC Pre-Raid` / `TBC Phase N`, `WotLK Phase N`) and
+`categoryOrder` its position (`100 + N` Classic, `200 + N` TBC, `300 + N` WotLK; the
+hand-maintained sets use 290 = `TBC Tier 6`, 390 = `WotLK PvP S6`). The NPC sorts by
+`categoryOrder`, so the menu order no longer depends on which file was applied last.
 
 ## Idempotency
 
@@ -117,6 +125,7 @@ python .\extract_classic_bis.py `
 | `--suffix` | `60PvEBiS` | playerSpec suffix |
 | `--talent-suffix` | `{spec}60PvE` | Full talent/glyph override spec name |
 | `--category` | *(empty)* | Gossip sub-menu label; empty = root menu |
+| `--category-order` | `0` | Sort key of the category in the gossip menu (lower = higher up) |
 | `--out` | `out/classic_generated.sql` | Output SQL file |
 
 ---
@@ -150,7 +159,20 @@ python .\batch_extract_tbc.py --phase 3 --skip-discover
 
 ### Coverage
 
-All 27 TBC specs have guides on `tbc.wowhead.com` for every phase 0–5. Discovery tries:
+All 27 TBC specs have guides on `tbc.wowhead.com` for every phase 0–5.
+
+**Death Knights** didn't exist in TBC, so no guides exist for them. `DERIVED_SPECS`
+builds them from the Warrior guides of the same phase: Blood from Protection (armor)
+plus Arms (weapons, since DKs can't use shields and tanked with a two-hander), Frost
+from Fury (dual-wield), Unholy from Arms. Items restricted to other classes (e.g. the
+Warrior tier set, Warglaives) are skipped for the next-ranked row, only weapon types
+a DK can use are kept (axes, maces, swords, polearms), and the ranged slot gets
+Sigil of the Dark Rider, the only sigil below level 80. Leather/mail picks from the
+Warrior guides are kept (DKs can wear them). Talents and glyphs reuse the
+`{Blood,Frost,Unholy}70PvE` templates from the hand-maintained T6 file, which no
+longer carries a DK "Tier 6" build (there was no DK tier set).
+
+Discovery tries:
 1. The spec's `/tbc/guide/classes/` index page, extracting the phase URL from its
    `[cta-button=...]` links (only while the page still shows TBC content).
 2. A direct probe of `tbc.wowhead.com/guides/{spec}-{class}-{role}-{phase-slug}-...`.
@@ -208,6 +230,7 @@ python .\extract_tbc_bis.py `
 | `--suffix` | `70PvEP3BiS` | playerSpec suffix |
 | `--talent-suffix` | `{spec}70PvE` | Full talent/glyph override spec name |
 | `--category` | *(empty)* | Gossip sub-menu label; empty = root menu |
+| `--category-order` | `0` | Sort key of the category in the gossip menu (lower = higher up) |
 | `--out` | `out/tbc_generated.sql` | Output SQL file |
 
 ---
@@ -294,6 +317,7 @@ python .\extract_wotlk_bis.py `
 | `--suffix` | `80PvEP4BiS` | playerSpec suffix |
 | `--talent-override-suffix` | `80PvP` | Talent/glyph override spec suffix |
 | `--category` | *(empty)* | Gossip sub-menu label; empty = root menu |
+| `--category-order` | `0` | Sort key of the category in the gossip menu (lower = higher up) |
 | `--out` | `out/generated_spec.sql` | Output SQL file |
 
 ---

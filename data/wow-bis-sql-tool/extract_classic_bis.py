@@ -469,6 +469,7 @@ def render_sql(
     talent_override: str,
     slot_items: dict[int, int],
     category: str = "",
+    category_order: int = 0,
 ) -> str:
     full_spec = f"{player_spec}{suffix}"
     spec_label = suffix_to_label(suffix)
@@ -495,16 +496,17 @@ def render_sql(
     lines.append(
         "INSERT INTO `mod_npc_talent_template_index` "
         "(`playerClass`, `playerSpec`, `gossipAction`, `gossipText`, `mask`, "
-        "`minLevel`, `maxLevel`, `glyphOverride`, `talentOverride`, `category`) VALUES"
+        "`minLevel`, `maxLevel`, `glyphOverride`, `talentOverride`, `category`, "
+        "`categoryOrder`) VALUES"
     )
     lines.append(
         f"('{player_class}', '{full_spec}', @ACTION+000, '{gossip_text}', "
-        f"7, @MINLEVEL, @MAXLEVEL, '{talent_override}', '{talent_override}', '{category}'),"
+        f"7, @MINLEVEL, @MAXLEVEL, '{talent_override}', '{talent_override}', '{category}', {category_order}),"
     )
     lines.append(
         f"('{player_class}', '{full_spec}', @ACTION+001, "
         f"'{gossip_text} (Talents and Glyphs only)', "
-        f"6, @MINLEVEL, @MAXLEVEL, '{talent_override}', '{talent_override}', '{category}');"
+        f"6, @MINLEVEL, @MAXLEVEL, '{talent_override}', '{talent_override}', '{category}', {category_order});"
     )
     lines.append(
         "/*!40000 ALTER TABLE `mod_npc_talent_template_index` ENABLE KEYS */;"
@@ -572,6 +574,10 @@ def main() -> None:
         help="Gossip sub-menu category label (default: empty = root menu)",
     )
     parser.add_argument(
+        "--category-order", type=int, default=0,
+        help="Sort key of the category in the gossip menu (lower = higher up, default: 0)",
+    )
+    parser.add_argument(
         "--out", default="out/classic_generated.sql", help="Output SQL file"
     )
     args = parser.parse_args()
@@ -593,6 +599,7 @@ def main() -> None:
         talent_override=talent_override,
         slot_items=slot_items,
         category=args.category,
+        category_order=args.category_order,
     )
 
     out_path = Path(args.out)

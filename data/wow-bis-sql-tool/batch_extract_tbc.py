@@ -63,6 +63,38 @@ TBC_SPECS: list[tuple[str, str, str, str, str]] = [
     ("warrior", "protection",    "tank",   "Warrior", "Protection"),
 ]
 
+# Specs without TBC guides of their own, extracted from another class's guide:
+# (player_class, player_spec, source player_class, source player_spec).
+# Death Knights didn't exist in TBC; the Warrior guides share their plate/strength
+# stat priorities. extract_tbc_bis applies the DK weapon and sigil rules.
+DERIVED_SPECS: list[tuple[str, str, str, str]] = [
+    ("Death Knight", "Blood",  "Warrior", "Protection"),
+    ("Death Knight", "Frost",  "Warrior", "Fury"),
+    ("Death Knight", "Unholy", "Warrior", "Arms"),
+]
+
+# Derived specs whose weapons come from a different source guide. Blood DKs can't
+# use the Protection Warrior's shield and tanked with a two-hander, so they take
+# the Arms Warrior's weapons: (player_class, player_spec) -> (class, spec).
+# Slots left empty because the main source only lists items the class can't use
+# (e.g. Warrior tier shoulders) are filled from this guide too.
+DERIVED_WEAPON_SOURCE: dict[tuple[str, str], tuple[str, str]] = {
+    ("Death Knight", "Blood"): ("Warrior", "Arms"),
+}
+
+
+def add_derived_entries(entries: list[tuple[str, str, str, str, str, str]]) -> None:
+    """Append DERIVED_SPECS entries that reuse their source spec's guide URL."""
+    by_spec = {(e[3], e[4]): e for e in entries}
+    for pcls, pspec, src_cls, src_spec in DERIVED_SPECS:
+        if (pcls, pspec) in by_spec:
+            continue
+        src = by_spec.get((src_cls, src_spec))
+        if src:
+            entries.append((src[0], src[1], src[2], pcls, pspec, src[5]))
+        else:
+            print(f"  --  {pcls}/{pspec}: no {src_cls}/{src_spec} guide to derive from")
+
 # Phase number → substring keywords for matching cta-button URLs (index page)
 PHASE_MATCH_KEYWORDS: dict[int, list[str]] = {
     0: ["pre-raid"],
@@ -252,6 +284,11 @@ def _is_two_hand(item_id: int) -> bool:
     return bool(info and info.is_two_hand)
 
 
+def tbc_category(phase: int) -> str:
+    """Gossip sub-menu label for a phase (phase 0 is the pre-raid list)."""
+    return "TBC Pre-Raid" if phase == 0 else f"TBC Phase {phase}"
+
+
 def role_suffix(role: str, phase: int, player_spec: str) -> str:
     """Build the playerSpec suffix, e.g. '70PvEP3BiS'."""
     _ = role  # TBC gear is same suffix regardless of role (role is in spec name)
@@ -330,6 +367,8 @@ def main() -> None:
         )
         print(f"\nSaved {len(entries)} verified URLs to {url_path}")
 
+    add_derived_entries(entries)
+
     if not entries:
         print("No valid URLs found. Exiting.")
         sys.exit(1)
@@ -351,15 +390,30 @@ def main() -> None:
     blocks: list[str] = []
     errors: list[str] = []
 
+    markup_cache: dict[str, str] = {}
     for idx, (cls, spec, role, pcls, pspec, url) in enumerate(entries):
         suffix = role_suffix(role, args.phase, pspec)
         talent_override = f"{pspec}{args.talent_suffix}"
         print(f"  [{idx+1:2d}/{len(entries)}] {pcls}/{pspec}  ->  {pspec}{suffix}")
         try:
-            page_html = mod.fetch_html(url)
-            markup = mod.extract_markup_text(page_html)
+            if url not in markup_cache:  # derived specs reuse their source's page
+                markup_cache[url] = mod.extract_markup_text(mod.fetch_html(url))
+            markup = markup_cache[url]
             warnings: list[str] = []
             slot_items = mod.extract_bis_by_slot(markup, pcls, pspec, warnings)
+            weapon_src = DERIVED_WEAPON_SOURCE.get((pcls, pspec))
+            if weapon_src:
+                src_url = next((e[5] for e in entries if (e[3], e[4]) == weapon_src), None)
+                if src_url:
+                    if src_url not in markup_cache:
+                        markup_cache[src_url] = mod.extract_markup_text(mod.fetch_html(src_url))
+                    secondary = mod.extract_bis_by_slot(markup_cache[src_url], pcls, pspec)
+                    for slot in (mod.MAIN_HAND, mod.OFF_HAND):
+                        slot_items.pop(slot, None)
+                        if slot in secondary:
+                            slot_items[slot] = secondary[slot]
+                    for slot, item in secondary.items():
+                        slot_items.setdefault(slot, item)
             for w in warnings:
                 print(f"       WARN {w}")
             missing = [
@@ -377,7 +431,8 @@ def main() -> None:
                 suffix=suffix,
                 talent_override=talent_override,
                 slot_items=slot_items,
-                category=f"TBC Phase {args.phase}",
+                category=tbc_category(args.phase),
+                category_order=200 + args.phase,  # menu order: Classic 1xx, TBC 2xx, WotLK 3xx
             )
             cleaned = strip_per_spec_header(sql)
             blocks.append(f"-- ===== {pcls} {pspec}{suffix} =====")

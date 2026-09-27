@@ -101,11 +101,18 @@ _WEAPON_WORDS = re.compile(
 
 # Dual-wield / two-hand preference per spec. Hunters may use either (guide order).
 _DUAL_WIELD_CLASSES = {"Rogue", "Hunter"}
-_DUAL_WIELD_SPECS = {("Warrior", "Fury"), ("Shaman", "Enhancement")}
+_DUAL_WIELD_SPECS = {("Warrior", "Fury"), ("Shaman", "Enhancement"), ("Death Knight", "Frost")}
 _PREFER_TWO_HAND = {
     ("Warrior", "Arms"), ("Warrior", "ArmsAxe"), ("Warrior", "ArmsSword"),
     ("Paladin", "Retribution"), ("Druid", "Cat"), ("Druid", "Bear"),
+    ("Death Knight", "Blood"), ("Death Knight", "Unholy"),
 }
+
+# Death Knights didn't exist in TBC: their level-70 sets are derived from Warrior
+# guides (see batch_extract_tbc.DERIVED_SPECS), so Warrior-only weapon types are
+# dropped and the ranged slot gets a sigil, which TBC had none of.
+_DK_WEAPON_SUBCLASSES = {0, 1, 4, 5, 6, 7, 8}  # 1H/2H axe, 1H/2H mace, polearm, 1H/2H sword
+DK_SIGIL = 39208  # Sigil of the Dark Rider (Acherus quest reward, the only sigil below level 80)
 
 _OFF_HAND_TYPES = {item_info.INV_OFF_HAND, item_info.INV_SHIELD, item_info.INV_HOLDABLE}
 # Weapons that come as a main-hand/off-hand set. Guides rank the set once as
@@ -169,6 +176,9 @@ SPEC_ICONS: dict[tuple[str, str], str] = {
     ("Warrior", "ArmsSword"):     "ability_rogue_eviscerate",
     ("Warrior", "Fury"):          "ability_warrior_innerrage",
     ("Warrior", "Protection"):    "ability_warrior_defensivestance",
+    ("Death Knight", "Blood"):    "spell_deathknight_bloodpresence",
+    ("Death Knight", "Frost"):    "spell_deathknight_frostpresence",
+    ("Death Knight", "Unholy"):   "spell_deathknight_unholypresence",
 }
 
 
@@ -289,6 +299,10 @@ def _resolve_hands(
     def inv(r: _Row) -> int:
         return item_info.get(r.item).inventory_type
 
+    if player_class == "Death Knight":
+        pool = [r for r in pool if item_info.get(r.item).item_class == 2
+                and item_info.get(r.item).subclass in _DK_WEAPON_SUBCLASSES]
+
     # Main hand: a main-hand-capable item from a main/any section. Rows labelled
     # "Off Hand" in a mixed table only count once nothing else is left.
     mh_rows = [r for r in pool if r.kind in ("main", "any") and inv(r) in item_info.MAIN_HAND_TYPES]
@@ -325,7 +339,9 @@ def _resolve_hands(
     # guide folded into its combined "Weapons" table (pre-raid hunter guides).
     rng = [r for r in pool if inv(r) in item_info.RANGED_TYPES]
     rng.sort(key=lambda r: (r.kind != "ranged", r.tier, r.order))
-    if rng:
+    if player_class == "Death Knight":
+        result[RANGED] = DK_SIGIL
+    elif rng:
         result[RANGED] = rng[0].item
 
 
@@ -358,9 +374,12 @@ def extract_bis_by_slot(
 
         rows: list[_Row] = []
         for item, label, o in _section_rows(parts[i + 1], order):
-            if item_info.get(item) is None:
+            info = item_info.get(item)
+            if info is None:
                 unknown.add(item)
                 continue
+            if player_class and not info.usable_by(player_class):
+                continue  # class-restricted (e.g. another class's tier piece)
             rows.append(_Row(item, label, _rank_tier(label), o, hand_kind or ""))
         order += 1000  # keep sections apart in document order
 
@@ -401,6 +420,7 @@ def render_sql(
     talent_override: str,
     slot_items: dict[int, int],
     category: str = "",
+    category_order: int = 0,
 ) -> str:
     full_spec = f"{player_spec}{suffix}"
     spec_label = suffix_to_label(suffix)
@@ -427,16 +447,17 @@ def render_sql(
     lines.append(
         "INSERT INTO `mod_npc_talent_template_index` "
         "(`playerClass`, `playerSpec`, `gossipAction`, `gossipText`, `mask`, "
-        "`minLevel`, `maxLevel`, `glyphOverride`, `talentOverride`, `category`) VALUES"
+        "`minLevel`, `maxLevel`, `glyphOverride`, `talentOverride`, `category`, "
+        "`categoryOrder`) VALUES"
     )
     lines.append(
         f"('{player_class}', '{full_spec}', @ACTION+000, '{gossip_text}', "
-        f"7, @MINLEVEL, @MAXLEVEL, '{talent_override}', '{talent_override}', '{category}'),"
+        f"7, @MINLEVEL, @MAXLEVEL, '{talent_override}', '{talent_override}', '{category}', {category_order}),"
     )
     lines.append(
         f"('{player_class}', '{full_spec}', @ACTION+001, "
         f"'{gossip_text} (Talents and Glyphs only)', "
-        f"6, @MINLEVEL, @MAXLEVEL, '{talent_override}', '{talent_override}', '{category}');"
+        f"6, @MINLEVEL, @MAXLEVEL, '{talent_override}', '{talent_override}', '{category}', {category_order});"
     )
     lines.append(
         "/*!40000 ALTER TABLE `mod_npc_talent_template_index` ENABLE KEYS */;"
@@ -509,6 +530,10 @@ def main() -> None:
         help="Gossip sub-menu category label (default: empty = root menu)",
     )
     parser.add_argument(
+        "--category-order", type=int, default=0,
+        help="Sort key of the category in the gossip menu (lower = higher up, default: 0)",
+    )
+    parser.add_argument(
         "--out", default="out/tbc_generated.sql", help="Output SQL file"
     )
     args = parser.parse_args()
@@ -533,6 +558,7 @@ def main() -> None:
         talent_override=talent_override,
         slot_items=slot_items,
         category=args.category,
+        category_order=args.category_order,
     )
 
     out_path = Path(args.out)

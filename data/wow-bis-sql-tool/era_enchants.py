@@ -74,7 +74,7 @@ _T70_CASTER_WEAPON = {
     "Frost": 2672, "Shadow": 2672, "Affliction": 2672, "Demonology": 2672,
 }
 # Two-handed strength users take Savagery (+70 AP) instead of the 1H Mongoose default.
-_T70_TWOHAND_STR = {"Arms", "ArmsAxe", "ArmsSword", "Retribution"}
+_T70_TWOHAND_STR = {"Arms", "ArmsAxe", "ArmsSword", "Retribution", "Unholy"}
 
 # --- TBC gems (level 70) ---------------------------------------------------
 # TBC introduced sockets (Classic gear has none, level-80 gems come from the gear
@@ -159,13 +159,22 @@ _SHIELD_USERS = {
     ("Shaman", "Restoration"), ("Shaman", "Elemental"),
 }
 _DUAL_WIELD = {
-    ("Warrior", "Fury"), ("Shaman", "Enhancement"),
+    ("Warrior", "Fury"), ("Shaman", "Enhancement"), ("Death Knight", "Frost"),
     ("Rogue", "Combat"), ("Rogue", "Assassination"), ("Rogue", "Subtlety"),
 }
 
 
+# Where the spec name alone is ambiguous: "Frost" is a Mage caster spec but a melee
+# Death Knight spec, and Blood is the DK tank spec.
+_CLASS_SPEC_ROLE = {
+    ("Death Knight", "Blood"): "tank",
+    ("Death Knight", "Frost"): "melee_str",
+    ("Death Knight", "Unholy"): "melee_str",
+}
+
+
 def _role_of(player_class: str, player_spec: str) -> str:
-    return _SPEC_ROLE.get(player_spec, "melee_str")
+    return _CLASS_SPEC_ROLE.get((player_class, player_spec)) or _SPEC_ROLE.get(player_spec, "melee_str")
 
 
 def _classic_enchants(player_class: str, player_spec: str) -> dict[int, int]:

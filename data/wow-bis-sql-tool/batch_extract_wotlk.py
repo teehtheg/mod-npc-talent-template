@@ -255,6 +255,7 @@ def main() -> None:
                 talent_override_suffix=args.talent_suffix,
                 glyph_override_suffix=args.glyph_suffix,
                 category=f"WotLK Phase {args.phase}",
+                category_order=300 + args.phase,  # menu order: Classic 1xx, TBC 2xx, WotLK 3xx
                 talent_spec_base=talent_spec_base,
             )
             cleaned = strip_per_spec_header(sql)
