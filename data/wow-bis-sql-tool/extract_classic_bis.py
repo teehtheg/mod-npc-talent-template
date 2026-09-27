@@ -173,12 +173,22 @@ INV_SLOT_TO_POS: dict[int, int] = {
     18: 17, # ranged / relic
 }
 
-# Relic (inv_slot 18) for specs whose guides list none. The Classic Paladin
-# guides have no libram section in some phases (P2 Holy/Prot, P5/P6 Prot), which
-# left the slot empty; only used when the guide yields no relic.
-RELIC_FALLBACK: dict[tuple[str, str], int] = {
-    ("Paladin", "Holy"): 23201,        # Libram of Divinity
-    ("Paladin", "Protection"): 23203,  # Libram of Fervor
+# Relic (inv_slot 18) per spec, used in every phase instead of the guide's pick.
+# The server runs 3.3.5a, so a level-60 character can use every relic without a
+# higher level requirement, including TBC ones with none (Raven Goddess, Blessed
+# Book of Nagrand, Harold's Broach), which beat the Classic relics the guides list.
+# Several guides also list no relic at all (Paladin P2, Druid/Shaman P2/P4) or put
+# a wand in the slot (Balance P2). Effects from the 3.3.5a tooltips:
+LEVEL60_RELIC: dict[tuple[str, str], int] = {
+    ("Paladin", "Holy"): 25644,         # Blessed Book of Nagrand: Flash of Light +79
+    ("Paladin", "Protection"): 23203,   # Libram of Fervor: Seal mana cost -22
+    ("Druid", "Balance"): 32387,        # Idol of the Raven Goddess: +40 crit rating in Moonkin
+    ("Druid", "Cat"): 32387,            # Idol of the Raven Goddess: +40 crit rating in Cat Form
+    ("Druid", "Bear"): 32387,           # Idol of the Raven Goddess: +40 crit rating in Bear Form
+    ("Druid", "Restoration"): 25643,    # Harold's Rejuvenating Broach: Rejuvenation +86
+    ("Shaman", "Elemental"): 23199,     # Totem of the Storm: Lightning Bolt/Chain Lightning +33
+    ("Shaman", "Enhancement"): 22395,   # Totem of Rage: shocks +30
+    ("Shaman", "Restoration"): 22396,   # Totem of Life: Lesser Healing Wave +80
 }
 
 SPEC_ICONS: dict[tuple[str, str], str] = {
@@ -479,8 +489,8 @@ def render_sql(
     category: str = "",
     category_order: int = 0,
 ) -> str:
-    if 18 not in slot_items and (player_class, player_spec) in RELIC_FALLBACK:
-        slot_items = {**slot_items, 18: RELIC_FALLBACK[(player_class, player_spec)]}
+    if (player_class, player_spec) in LEVEL60_RELIC:
+        slot_items = {**slot_items, 18: LEVEL60_RELIC[(player_class, player_spec)]}
 
     full_spec = f"{player_spec}{suffix}"
     spec_label = suffix_to_label(suffix)
