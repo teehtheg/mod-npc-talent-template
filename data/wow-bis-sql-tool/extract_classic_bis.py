@@ -173,23 +173,47 @@ INV_SLOT_TO_POS: dict[int, int] = {
     18: 17, # ranged / relic
 }
 
-# Relic (inv_slot 18) per spec, used in every phase instead of the guide's pick.
-# The server runs 3.3.5a, so a level-60 character can use every relic without a
-# higher level requirement, including TBC ones with none (Raven Goddess, Blessed
-# Book of Nagrand, Harold's Broach), which beat the Classic relics the guides list.
-# Several guides also list no relic at all (Paladin P2, Druid/Shaman P2/P4) or put
-# a wand in the slot (Balance P2). Effects from the 3.3.5a tooltips:
-LEVEL60_RELIC: dict[tuple[str, str], int] = {
-    ("Paladin", "Holy"): 25644,         # Blessed Book of Nagrand: Flash of Light +79
-    ("Paladin", "Protection"): 23203,   # Libram of Fervor: Seal mana cost -22
-    ("Druid", "Balance"): 32387,        # Idol of the Raven Goddess: +40 crit rating in Moonkin
-    ("Druid", "Cat"): 32387,            # Idol of the Raven Goddess: +40 crit rating in Cat Form
-    ("Druid", "Bear"): 32387,           # Idol of the Raven Goddess: +40 crit rating in Bear Form
-    ("Druid", "Restoration"): 25643,    # Harold's Rejuvenating Broach: Rejuvenation +86
-    ("Shaman", "Elemental"): 23199,     # Totem of the Storm: Lightning Bolt/Chain Lightning +33
-    ("Shaman", "Enhancement"): 22395,   # Totem of Rage: shocks +30
-    ("Shaman", "Restoration"): 22396,   # Totem of Life: Lesser Healing Wave +80
+# Relics (inv_slot 18) for Paladins, Druids and Shamans, by the Classic phase they
+# became available: the patch 1.10 loot revamp and Tier 0.5 brought them in
+# Phase 5, the Naxxramas-era ones in Phase 6 (per Blizzard's content-phase notes
+# on the Wowhead Classic item pages). Builds only get a relic available up to
+# their own phase, so Phase 2/4 builds have none. The guides are not used here:
+# several list no relic, a wand, or relics from a later phase.
+RELIC_PHASE: dict[int, int] = {
+    23006: 6,  # Libram of Light: Flash of Light +43
+    23201: 5,  # Libram of Divinity: Flash of Light +28
+    23203: 5,  # Libram of Fervor: Seal mana cost -22
+    23197: 5,  # Idol of the Moon: Moonfire +33
+    22397: 5,  # Idol of Ferocity: Claw/Rake +20
+    23198: 5,  # Idol of Brutality: Maul +50, Swipe +10
+    22399: 5,  # Idol of Health: Healing Touch +100
+    23199: 5,  # Totem of the Storm: Lightning Bolt/Chain Lightning +33
+    22395: 5,  # Totem of Rage: shocks +30
+    22396: 5,  # Totem of Life: Lesser Healing Wave +80
 }
+
+# Per spec, best relic first; the first one available in the build's phase is used.
+RELIC_PREFERENCE: dict[tuple[str, str], list[int]] = {
+    ("Paladin", "Holy"): [23006, 23201],
+    ("Paladin", "Protection"): [23203],
+    ("Druid", "Balance"): [23197],
+    ("Druid", "Cat"): [22397],
+    ("Druid", "Bear"): [23198],
+    ("Druid", "Restoration"): [22399],
+    ("Shaman", "Elemental"): [23199],
+    ("Shaman", "Enhancement"): [22395],
+    ("Shaman", "Restoration"): [22396],
+}
+RELIC_CLASSES = {"Paladin", "Druid", "Shaman"}
+
+
+def phase_relic(player_class: str, player_spec: str, phase: int) -> int | None:
+    """Best relic available up to `phase` for the spec, or None."""
+    for item in RELIC_PREFERENCE.get((player_class, player_spec), []):
+        if RELIC_PHASE[item] <= phase:
+            return item
+    return None
+
 
 SPEC_ICONS: dict[tuple[str, str], str] = {
     ("Druid",   "Balance"):       "spell_nature_starfall",
@@ -489,8 +513,13 @@ def render_sql(
     category: str = "",
     category_order: int = 0,
 ) -> str:
-    if (player_class, player_spec) in LEVEL60_RELIC:
-        slot_items = {**slot_items, 18: LEVEL60_RELIC[(player_class, player_spec)]}
+    if player_class in RELIC_CLASSES:
+        # Relic by phase (see RELIC_PHASE); a suffix without a phase counts as the last one.
+        m = re.search(r"P(\d+)", suffix)
+        relic = phase_relic(player_class, player_spec, int(m.group(1)) if m else 6)
+        slot_items = {k: v for k, v in slot_items.items() if k != 18}
+        if relic:
+            slot_items[18] = relic
 
     full_spec = f"{player_spec}{suffix}"
     spec_label = suffix_to_label(suffix)
