@@ -173,6 +173,14 @@ INV_SLOT_TO_POS: dict[int, int] = {
     18: 17, # ranged / relic
 }
 
+# Relic (inv_slot 18) for specs whose guides list none. The Classic Paladin
+# guides have no libram section in some phases (P2 Holy/Prot, P5/P6 Prot), which
+# left the slot empty; only used when the guide yields no relic.
+RELIC_FALLBACK: dict[tuple[str, str], int] = {
+    ("Paladin", "Holy"): 23201,        # Libram of Divinity
+    ("Paladin", "Protection"): 23203,  # Libram of Fervor
+}
+
 SPEC_ICONS: dict[tuple[str, str], str] = {
     ("Druid",   "Balance"):       "spell_nature_starfall",
     ("Druid",   "Cat"):           "ability_druid_catform",
@@ -471,6 +479,9 @@ def render_sql(
     category: str = "",
     category_order: int = 0,
 ) -> str:
+    if 18 not in slot_items and (player_class, player_spec) in RELIC_FALLBACK:
+        slot_items = {**slot_items, 18: RELIC_FALLBACK[(player_class, player_spec)]}
+
     full_spec = f"{player_spec}{suffix}"
     spec_label = suffix_to_label(suffix)
     icon = SPEC_ICONS.get((player_class, player_spec), "inv_misc_questionmark")
