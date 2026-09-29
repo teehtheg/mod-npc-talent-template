@@ -393,21 +393,21 @@ def main() -> None:
     markup_cache: dict[str, str] = {}
     for idx, (cls, spec, role, pcls, pspec, url) in enumerate(entries):
         suffix = role_suffix(role, args.phase, pspec)
-        talent_override = f"{pspec}{args.talent_suffix}"
+        override = f"{pspec}{args.talent_suffix}"
         print(f"  [{idx+1:2d}/{len(entries)}] {pcls}/{pspec}  ->  {pspec}{suffix}")
         try:
             if url not in markup_cache:  # derived specs reuse their source's page
                 markup_cache[url] = mod.extract_markup_text(mod.fetch_html(url))
             markup = markup_cache[url]
             warnings: list[str] = []
-            slot_items = mod.extract_bis_by_slot(markup, pcls, pspec, warnings)
+            slot_items = mod.extract_bis_by_slot(markup, pcls, pspec, warnings, args.phase)
             weapon_src = DERIVED_WEAPON_SOURCE.get((pcls, pspec))
             if weapon_src:
                 src_url = next((e[5] for e in entries if (e[3], e[4]) == weapon_src), None)
                 if src_url:
                     if src_url not in markup_cache:
                         markup_cache[src_url] = mod.extract_markup_text(mod.fetch_html(src_url))
-                    secondary = mod.extract_bis_by_slot(markup_cache[src_url], pcls, pspec)
+                    secondary = mod.extract_bis_by_slot(markup_cache[src_url], pcls, pspec, phase=args.phase)
                     for slot in (mod.MAIN_HAND, mod.OFF_HAND):
                         slot_items.pop(slot, None)
                         if slot in secondary:
@@ -429,10 +429,11 @@ def main() -> None:
                 player_class=pcls,
                 player_spec=pspec,
                 suffix=suffix,
-                talent_override=talent_override,
+                talent_override=mod.talent_template(pcls, pspec, slot_items, override),
                 slot_items=slot_items,
                 category=tbc_category(args.phase),
                 category_order=200 + args.phase,  # menu order: Classic 1xx, TBC 2xx, WotLK 3xx
+                glyph_override=override,
             )
             cleaned = strip_per_spec_header(sql)
             blocks.append(f"-- ===== {pcls} {pspec}{suffix} =====")

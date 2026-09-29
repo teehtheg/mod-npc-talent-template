@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import json
 import re
 import sys
 import time
@@ -119,6 +120,60 @@ _OFF_HAND_TYPES = {item_info.INV_OFF_HAND, item_info.INV_SHIELD, item_info.INV_H
 # "Best Pair" and only link the main-hand item.
 _PAIRED_OFF_HAND = {32837: 32838}  # Warglaive of Azzinoth (MH) -> (OH)
 _PAIR_LABEL = re.compile(r"\bpair\b", re.I)
+
+# Wowhead keeps the pre-raid guides current through later phases (they now rank
+# Phase 3 gear), so builds skip items from a later phase than their own. The
+# phase is the TBC Classic content phase on the item's Wowhead tooltip. Phase 1
+# (launch) also covers pre-raid, so there only raid loot counts as phase 1.
+ITEM_PHASE: dict[int, int] = {
+    # Brewfest (Coren Direbrew) has no content phase; its first run came after Phase 2 opened.
+    **dict.fromkeys((37127, 37128, 38287, 38290), 2),
+}
+_PHASE1_RAID_ZONES = {3457, 3923, 3836}  # Karazhan, Gruul's Lair, Magtheridon's Lair
+_PHASE1_WORLD_BOSSES = {18728, 17711}   # Doom Lord Kazzak, Doomwalker
+_TOOLTIP_URL = "https://nether.wowhead.com/tbc/tooltip/item/{}"
+_ITEM_XML_URL = "https://www.wowhead.com/tbc/item={}&xml"
+_PHASE_CACHE = Path(__file__).parent / "out" / "tbc_item_phases.json"
+_phases: dict[str, int] | None = None
+
+
+def _raid_only(item_id: int) -> bool:
+    """True if every Wowhead source of the item is a phase-1 raid or world boss."""
+    m = re.search(r'"sourcemore":(\[.*?\])', fetch_html(_ITEM_XML_URL.format(item_id)))
+    sources = json.loads(m.group(1)) if m else []
+    return bool(sources) and all(
+        s.get("z") in _PHASE1_RAID_ZONES or s.get("ti") in _PHASE1_WORLD_BOSSES for s in sources)
+
+
+def _wowhead_phase(item_id: int) -> int:
+    """Phase from Wowhead (0 = pre-raid), cached in out/ so reruns make no requests."""
+    global _phases
+    if _phases is None:
+        _phases = json.loads(_PHASE_CACHE.read_text(encoding="utf-8")) if _PHASE_CACHE.exists() else {}
+    key = str(item_id)
+    if key not in _phases:
+        try:
+            tooltip = json.loads(fetch_html(_TOOLTIP_URL.format(item_id))).get("tooltip", "")
+        except urllib.error.HTTPError as exc:
+            if exc.code != 404:
+                raise
+            tooltip = ""  # not in Wowhead's TBC database, so no phase data
+        m = re.search(r'whtt-extra">Phase (\d)<', tooltip)
+        phase = int(m.group(1)) if m else 0
+        if phase == 1 and not _raid_only(item_id):
+            phase = 0
+        _phases[key] = phase
+        _PHASE_CACHE.parent.mkdir(exist_ok=True)
+        _PHASE_CACHE.write_text(json.dumps(_phases, sort_keys=True), encoding="utf-8")
+    return _phases[key]
+
+
+def item_phase(info) -> int:
+    """Earliest TBC phase (0 = pre-raid) the item was available in."""
+    if info.entry in ITEM_PHASE:
+        return ITEM_PHASE[info.entry]
+    return _wowhead_phase(info.entry)
+
 
 _OFF_LABEL = re.compile(r"off[\s-]?hand|\boh\b", re.I)
 _MAIN_LABEL = re.compile(r"main[\s-]?hand|\bmh\b", re.I)
@@ -350,12 +405,14 @@ def extract_bis_by_slot(
     player_class: str | None = None,
     player_spec: str | None = None,
     warnings: list[str] | None = None,
+    phase: int | None = None,
 ) -> dict[int, int]:
     """
     Parse [h3 toc="SlotName"] + [table] markup.
 
     Returns {inv_slot: item_id} with the best item per slot. player_class /
     player_spec steer the hand resolution (dual wield, two-hand preference);
+    items from a later phase than `phase` are skipped (see item_phase), and
     skipped items are described in `warnings` when a list is passed.
     """
     warn = warnings.append if warnings is not None else (lambda _msg: None)
@@ -380,6 +437,9 @@ def extract_bis_by_slot(
                 continue
             if player_class and not info.usable_by(player_class):
                 continue  # class-restricted (e.g. another class's tier piece)
+            if phase is not None and item_phase(info) > phase:
+                warn(f"[{heading}] {item} ({info.name}) is from phase {item_phase(info)}, skipped")
+                continue
             rows.append(_Row(item, label, _rank_tier(label), o, hand_kind or ""))
         order += 1000  # keep sections apart in document order
 
@@ -413,6 +473,19 @@ def suffix_to_label(suffix: str) -> str:
     return " ".join(tokens) if tokens else suffix
 
 
+# Axes and polearms share Poleaxe Specialization.
+_AXE_SUBCLASSES = {0, 1, 6}
+
+
+def talent_template(player_class: str, player_spec: str, slot_items: dict[int, int], default: str) -> str:
+    """Arms only has ArmsAxe*/ArmsSword* talent templates, picked by the main-hand weapon."""
+    if (player_class, player_spec) != ("Warrior", "Arms"):
+        return default
+    mh = item_info.get(slot_items.get(MAIN_HAND, 0))
+    weapon = "Axe" if mh and mh.subclass in _AXE_SUBCLASSES else "Sword"
+    return default.replace("Arms", f"Arms{weapon}", 1)
+
+
 def render_sql(
     player_class: str,
     player_spec: str,
@@ -421,7 +494,9 @@ def render_sql(
     slot_items: dict[int, int],
     category: str = "",
     category_order: int = 0,
+    glyph_override: str = "",
 ) -> str:
+    glyph_override = glyph_override or talent_override
     full_spec = f"{player_spec}{suffix}"
     spec_label = suffix_to_label(suffix)
     icon = SPEC_ICONS.get((player_class, player_spec), "inv_misc_questionmark")
@@ -452,12 +527,12 @@ def render_sql(
     )
     lines.append(
         f"('{player_class}', '{full_spec}', @ACTION+000, '{gossip_text}', "
-        f"7, @MINLEVEL, @MAXLEVEL, '{talent_override}', '{talent_override}', '{category}', {category_order}),"
+        f"7, @MINLEVEL, @MAXLEVEL, '{glyph_override}', '{talent_override}', '{category}', {category_order}),"
     )
     lines.append(
         f"('{player_class}', '{full_spec}', @ACTION+001, "
         f"'{gossip_text} (Talents and Glyphs only)', "
-        f"6, @MINLEVEL, @MAXLEVEL, '{talent_override}', '{talent_override}', '{category}', {category_order});"
+        f"6, @MINLEVEL, @MAXLEVEL, '{glyph_override}', '{talent_override}', '{category}', {category_order});"
     )
     lines.append(
         "/*!40000 ALTER TABLE `mod_npc_talent_template_index` ENABLE KEYS */;"
@@ -538,12 +613,14 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    talent_override = args.talent_suffix or f"{args.player_spec}70PvE"
+    glyph_override = args.talent_suffix or f"{args.player_spec}70PvE"
 
     page_html = fetch_html(args.url)
     markup = extract_markup_text(page_html)
     warnings: list[str] = []
-    slot_items = extract_bis_by_slot(markup, args.player_class, args.player_spec, warnings)
+    m = re.search(r"P(\d+)", args.suffix)
+    slot_items = extract_bis_by_slot(markup, args.player_class, args.player_spec, warnings,
+                                     int(m.group(1)) if m else None)
     for w in warnings:
         print(f"  WARN {w}")
 
@@ -555,10 +632,12 @@ def main() -> None:
         player_class=args.player_class,
         player_spec=args.player_spec,
         suffix=args.suffix,
-        talent_override=talent_override,
+        talent_override=args.talent_suffix or talent_template(
+            args.player_class, args.player_spec, slot_items, glyph_override),
         slot_items=slot_items,
         category=args.category,
         category_order=args.category_order,
+        glyph_override=glyph_override,
     )
 
     out_path = Path(args.out)

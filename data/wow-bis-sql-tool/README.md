@@ -192,9 +192,18 @@ foreach ($p in 0..5) { python .\batch_extract_tbc.py --phase $p --skip-discover 
 python .\deploy_to_base.py
 ```
 
+**Phase filter:** Wowhead keeps the pre-raid guides current through later phases
+(they now rank Phase 3 arena, honor and raid-pattern crafted gear), so every build
+skips items from a later phase than its own and takes the next-ranked row instead.
+The phase is the TBC Classic content phase on the item's Wowhead tooltip. Phase 1,
+the launch, counts as pre-raid unless every Wowhead source of the item is a phase-1
+raid (Karazhan, Gruul, Magtheridon) or world boss. Results are cached in
+`out/tbc_item_phases.json`; `ITEM_PHASE` in `extract_tbc_bis.py` dates the Brewfest
+trinkets, which have no content phase.
+
 The batch run prints a `WARN` line per skipped item (not in the 3.3.5a
-`item_template`, or wrong slot type) and a `MISSING` line per spec with empty slots —
-review those before deploying.
+`item_template`, wrong slot type, or from a later phase) and a `MISSING` line per
+spec with empty slots — review those before deploying.
 
 ### Output spec naming
 
@@ -206,6 +215,8 @@ review those before deploying.
 | Holy (Paladin) | `Holy70PvEP3BiS` |
 
 Talent/glyph overrides reference existing `{spec}70PvE` entries (e.g. the T6 base SQL).
+Arms has no `Arms70PvE` talent template, so its talents use `ArmsAxe70PvE` (axe or
+polearm main hand) or `ArmsSword70PvE` (anything else).
 
 ---
 
